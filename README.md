@@ -60,8 +60,10 @@ that you (or a fresh agent session) can open later.
   or copy its resume command. Tabs survive a server restart with **Resume session**.
 - **Files, diffs and git.** A file tree, a markdown viewer with `path:line` links, a diff against
   the previous version of any doc, and git history.
-- **Themes that reach the CLIs.** Colour themes (Cayrnx, Dracula, Nord, Solarized, Gruvbox,
-  Tokyo Night, Catppuccin, One Dark, Cyberpunk, Green Phosphor) restyle the app *and* the CLIs.
+- **Themes that reach the CLIs.** Fifteen colour themes, each with its own tinted surfaces and
+  accent, restyle the app *and* the CLIs: Cayrnx (dark/light), Dracula, Nord, Solarized
+  Dark/Light, Gruvbox, Tokyo Night, Catppuccin Mocha, One Dark, Cyberpunk, Green Phosphor,
+  Forest, Amber CRT, High Contrast and Paper.
   Claude Code and OpenCode are started in their terminal-palette modes, and colour queries are
   answered with the theme's colours.
 - **Shared-folder warnings.** By default tabs work in the project folder, like terminals you

@@ -112,15 +112,17 @@ export const PALETTES: Palette[] = [
     'dracula',
     'Dracula',
     'dark',
-    { bg: '#21222c', panel: '#282a36', raised: '#2f3241', elev: '#343746', line: '#383a4a', line2: '#44475a', text: '#f8f8f2', muted: '#c5c8d6', dim: '#8b8fa8', accent: '#bd93f9', accentInk: '#1b1528', blue: '#8be9fd', green: '#50fa7b', red: '#ff5555', purple: '#ff79c6', teal: '#8be9fd', term: '#282a36', termfg: '#f8f8f2' },
-    ansi('#282a36', '#f8f8f2', '#f8f8f2', 'rgba(68,71,90,.8)', ['#21222c', '#ff5555', '#50fa7b', '#f1fa8c', '#bd93f9', '#ff79c6', '#8be9fd', '#f8f8f2'], ['#6272a4', '#ff6e6e', '#69ff94', '#ffffa5', '#d6acff', '#ff92df', '#a4ffff', '#ffffff']),
+    // Purple night with hot-pink highlights.
+    { bg: '#1b1726', panel: '#231e33', raised: '#2c2640', elev: '#342d4c', line: '#3b3354', line2: '#57497e', text: '#f8f8f2', muted: '#d2c8ee', dim: '#9488b8', accent: '#ff79c6', accentInk: '#2a0f22', blue: '#8be9fd', green: '#50fa7b', red: '#ff5555', purple: '#bd93f9', teal: '#8be9fd', term: '#211c30', termfg: '#f8f8f2' },
+    ansi('#211c30', '#f8f8f2', '#ff79c6', 'rgba(189,147,249,.3)', ['#21222c', '#ff5555', '#50fa7b', '#f1fa8c', '#bd93f9', '#ff79c6', '#8be9fd', '#f8f8f2'], ['#6272a4', '#ff6e6e', '#69ff94', '#ffffa5', '#d6acff', '#ff92df', '#a4ffff', '#ffffff']),
   ),
   palette(
     'nord',
     'Nord',
     'dark',
-    { bg: '#242933', panel: '#2e3440', raised: '#3b4252', elev: '#3b4252', line: '#3b4252', line2: '#4c566a', text: '#eceff4', muted: '#d8dee9', dim: '#8d96a8', accent: '#88c0d0', accentInk: '#1d232c', blue: '#81a1c1', green: '#a3be8c', red: '#bf616a', purple: '#b48ead', teal: '#8fbcbb', term: '#2e3440', termfg: '#d8dee9' },
-    ansi('#2e3440', '#d8dee9', '#d8dee9', 'rgba(76,86,106,.7)', ['#3b4252', '#bf616a', '#a3be8c', '#ebcb8b', '#81a1c1', '#b48ead', '#88c0d0', '#e5e9f0'], ['#4c566a', '#bf616a', '#a3be8c', '#ebcb8b', '#81a1c1', '#b48ead', '#8fbcbb', '#eceff4']),
+    // Lighter slate greys and icy frost blue: the softest of the dark themes.
+    { bg: '#2e3440', panel: '#3b4252', raised: '#434c5e', elev: '#4c566a', line: '#4c566a', line2: '#616e88', text: '#eceff4', muted: '#d8dee9', dim: '#a5afc2', accent: '#88c0d0', accentInk: '#2e3440', blue: '#81a1c1', green: '#a3be8c', red: '#bf616a', purple: '#b48ead', teal: '#8fbcbb', term: '#353c4a', termfg: '#e5e9f0' },
+    ansi('#353c4a', '#e5e9f0', '#88c0d0', 'rgba(136,192,208,.28)', ['#3b4252', '#bf616a', '#a3be8c', '#ebcb8b', '#81a1c1', '#b48ead', '#88c0d0', '#e5e9f0'], ['#616e88', '#d08770', '#b5d19c', '#f0d399', '#94b4d4', '#c7a0c0', '#8fbcbb', '#eceff4']),
   ),
   palette(
     'solarized-dark',
@@ -140,29 +142,33 @@ export const PALETTES: Palette[] = [
     'gruvbox',
     'Gruvbox',
     'dark',
-    { bg: '#1d2021', panel: '#282828', raised: '#32302f', elev: '#3c3836', line: '#3c3836', line2: '#504945', text: '#ebdbb2', muted: '#d5c4a1', dim: '#928374', accent: '#fabd2f', accentInk: '#282828', blue: '#83a598', green: '#b8bb26', red: '#fb4934', purple: '#d3869b', teal: '#8ec07c', term: '#282828', termfg: '#ebdbb2' },
-    ansi('#282828', '#ebdbb2', '#ebdbb2', 'rgba(80,73,69,.8)', ['#282828', '#cc241d', '#98971a', '#d79921', '#458588', '#b16286', '#689d6a', '#a89984'], ['#928374', '#fb4934', '#b8bb26', '#fabd2f', '#83a598', '#d3869b', '#8ec07c', '#ebdbb2']),
+    // Warm browns with an orange accent, like an old wooden desk.
+    { bg: '#221c16', panel: '#2b241d', raised: '#372e25', elev: '#41362b', line: '#4a3d30', line2: '#6b5840', text: '#ebdbb2', muted: '#d5c4a1', dim: '#a89984', accent: '#fe8019', accentInk: '#221c16', blue: '#83a598', green: '#b8bb26', red: '#fb4934', purple: '#d3869b', teal: '#8ec07c', term: '#282018', termfg: '#ebdbb2' },
+    ansi('#282018', '#ebdbb2', '#fe8019', 'rgba(254,128,25,.25)', ['#3c3836', '#cc241d', '#98971a', '#d79921', '#458588', '#b16286', '#689d6a', '#a89984'], ['#928374', '#fb4934', '#b8bb26', '#fabd2f', '#83a598', '#d3869b', '#8ec07c', '#ebdbb2']),
   ),
   palette(
     'tokyo-night',
     'Tokyo Night',
     'dark',
-    { bg: '#16161e', panel: '#1a1b26', raised: '#1f2335', elev: '#24283b', line: '#232433', line2: '#2f334d', text: '#c0caf5', muted: '#a9b1d6', dim: '#6b7394', accent: '#7aa2f7', accentInk: '#16161e', blue: '#7dcfff', green: '#9ece6a', red: '#f7768e', purple: '#bb9af7', teal: '#73daca', term: '#1a1b26', termfg: '#c0caf5' },
-    ansi('#1a1b26', '#c0caf5', '#c0caf5', 'rgba(40,52,87,.9)', ['#15161e', '#f7768e', '#9ece6a', '#e0af68', '#7aa2f7', '#bb9af7', '#7dcfff', '#a9b1d6'], ['#414868', '#f7768e', '#9ece6a', '#e0af68', '#7aa2f7', '#bb9af7', '#7dcfff', '#c0caf5']),
+    // Deep indigo with city-light blue and magenta.
+    { bg: '#0e0f1c', panel: '#141628', raised: '#1b1e38', elev: '#222646', line: '#262b52', line2: '#3a4180', text: '#c0caf5', muted: '#a9b1d6', dim: '#6f78a8', accent: '#7aa2f7', accentInk: '#0e0f1c', blue: '#7dcfff', green: '#9ece6a', red: '#f7768e', purple: '#bb9af7', teal: '#73daca', term: '#11132a', termfg: '#c0caf5' },
+    ansi('#11132a', '#c0caf5', '#7aa2f7', 'rgba(122,162,247,.28)', ['#15161e', '#f7768e', '#9ece6a', '#e0af68', '#7aa2f7', '#bb9af7', '#7dcfff', '#a9b1d6'], ['#414868', '#ff8fa5', '#b4e38a', '#f0c585', '#95b8ff', '#cfb2ff', '#a0dcff', '#c0caf5']),
   ),
   palette(
     'catppuccin',
     'Catppuccin Mocha',
     'dark',
-    { bg: '#181825', panel: '#1e1e2e', raised: '#232336', elev: '#313244', line: '#2a2b3c', line2: '#45475a', text: '#cdd6f4', muted: '#bac2de', dim: '#7f849c', accent: '#cba6f7', accentInk: '#1e1e2e', blue: '#89b4fa', green: '#a6e3a1', red: '#f38ba8', purple: '#f5c2e7', teal: '#94e2d5', term: '#1e1e2e', termfg: '#cdd6f4' },
-    ansi('#1e1e2e', '#cdd6f4', '#f5e0dc', 'rgba(88,91,112,.6)', ['#45475a', '#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#f5c2e7', '#94e2d5', '#bac2de'], ['#585b70', '#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#f5c2e7', '#94e2d5', '#a6adc8']),
+    // Soft pastel: mauve-grey surfaces with a peach accent.
+    { bg: '#1e1e2e', panel: '#26263a', raised: '#302f47', elev: '#393852', line: '#3d3c58', line2: '#595878', text: '#cdd6f4', muted: '#bac2de', dim: '#8a8fad', accent: '#fab387', accentInk: '#1e1e2e', blue: '#89b4fa', green: '#a6e3a1', red: '#f38ba8', purple: '#cba6f7', teal: '#94e2d5', term: '#24243a', termfg: '#cdd6f4' },
+    ansi('#24243a', '#cdd6f4', '#f5e0dc', 'rgba(250,179,135,.22)', ['#45475a', '#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#f5c2e7', '#94e2d5', '#bac2de'], ['#585b70', '#f38ba8', '#a6e3a1', '#f9e2af', '#89b4fa', '#f5c2e7', '#94e2d5', '#a6adc8']),
   ),
   palette(
     'one-dark',
     'One Dark',
     'dark',
-    { bg: '#21252b', panel: '#282c34', raised: '#2c313a', elev: '#323842', line: '#2f343e', line2: '#3e4452', text: '#dcdfe4', muted: '#abb2bf', dim: '#7f848e', accent: '#61afef', accentInk: '#1b1f25', blue: '#61afef', green: '#98c379', red: '#e06c75', purple: '#c678dd', teal: '#56b6c2', term: '#282c34', termfg: '#abb2bf' },
-    ansi('#282c34', '#abb2bf', '#528bff', 'rgba(62,68,82,.9)', ['#3f4451', '#e06c75', '#98c379', '#e5c07b', '#61afef', '#c678dd', '#56b6c2', '#d7dae0'], ['#4f5666', '#ff7b86', '#b1e18b', '#efcb87', '#67cdff', '#e48bff', '#63d4e0', '#e6e6e6']),
+    // Plain charcoal with no tint, and a gold accent.
+    { bg: '#1c1e22', panel: '#23262b', raised: '#2b2f35', elev: '#33373e', line: '#363a42', line2: '#4b515c', text: '#dcdfe4', muted: '#abb2bf', dim: '#7f848e', accent: '#e5c07b', accentInk: '#1c1e22', blue: '#61afef', green: '#98c379', red: '#e06c75', purple: '#c678dd', teal: '#56b6c2', term: '#23262b', termfg: '#abb2bf' },
+    ansi('#23262b', '#abb2bf', '#e5c07b', 'rgba(229,192,123,.2)', ['#3f4451', '#e06c75', '#98c379', '#e5c07b', '#61afef', '#c678dd', '#56b6c2', '#d7dae0'], ['#4f5666', '#ff7b86', '#b1e18b', '#efcb87', '#67cdff', '#e48bff', '#63d4e0', '#e6e6e6']),
   ),
   palette(
     'cyberpunk',
@@ -178,6 +184,38 @@ export const PALETTES: Palette[] = [
     { bg: '#010601', panel: '#020b02', raised: '#041304', elev: '#061a06', line: '#0a260a', line2: '#124012', text: '#4dff7a', muted: '#33d65f', dim: '#1f9a40', accent: '#7dff9b', accentInk: '#021002', blue: '#57ffa0', green: '#33ff66', red: '#d4ff4a', purple: '#9dffb4', teal: '#57ffa0', term: '#010801', termfg: '#33ff66' },
     // A monochrome CRT: every colour is a shade of green (red is a yellow-green so diffs still read).
     ansi('#010801', '#33ff66', '#66ff8c', 'rgba(51,255,102,.25)', ['#062806', '#b8f24a', '#33ff66', '#8cff5a', '#2bd96b', '#5cff8a', '#4dffb0', '#9dffb4'], ['#1f7a3a', '#d4ff4a', '#66ff8c', '#b8ff7a', '#4dff9a', '#8cffb0', '#80ffd0', '#d9ffe3']),
+  ),
+  palette(
+    'forest',
+    'Forest',
+    'dark',
+    // Deep pine greens with an amber accent (full colour, unlike Green Phosphor).
+    { bg: '#0d1712', panel: '#12201a', raised: '#182a21', elev: '#1e3429', line: '#234031', line2: '#33604a', text: '#dce8d6', muted: '#b5c9ad', dim: '#7f9a86', accent: '#e0b252', accentInk: '#0d1712', blue: '#6aa6c4', green: '#8fc46a', red: '#e06c5a', purple: '#c48fc4', teal: '#6ac4a6', term: '#101c15', termfg: '#d6e4cf' },
+    ansi('#101c15', '#d6e4cf', '#e0b252', 'rgba(224,178,82,.25)', ['#1b2e23', '#e06c5a', '#8fc46a', '#e0b252', '#6aa6c4', '#c48fc4', '#6ac4a6', '#cfdcc8'], ['#4a6654', '#f08a78', '#a8dc84', '#f0c872', '#88bcd8', '#d8a8d8', '#88dcc0', '#f0f5ec']),
+  ),
+  palette(
+    'amber',
+    'Amber CRT',
+    'dark',
+    // A monochrome amber terminal: every colour is a shade of orange-gold.
+    { bg: '#0a0600', panel: '#110a00', raised: '#1a1000', elev: '#221500', line: '#2e1d00', line2: '#4d3200', text: '#ffb000', muted: '#e69a00', dim: '#9a6800', accent: '#ffcc33', accentInk: '#1a1000', blue: '#ffc266', green: '#ffb000', red: '#ff7a1a', purple: '#ffd699', teal: '#ffc266', term: '#0c0700', termfg: '#ffb000' },
+    ansi('#0c0700', '#ffb000', '#ffcc33', 'rgba(255,176,0,.25)', ['#2a1a00', '#ff7a1a', '#ffb000', '#ffd24d', '#e69a00', '#ffa640', '#ffc266', '#ffcf80'], ['#7a4d00', '#ff9a4d', '#ffc233', '#ffe08a', '#ffb733', '#ffbf73', '#ffd699', '#ffe7bf']),
+  ),
+  palette(
+    'high-contrast',
+    'High Contrast',
+    'dark',
+    // Pure black and white with a yellow accent, for bright rooms and tired eyes.
+    { bg: '#000000', panel: '#000000', raised: '#0d0d0d', elev: '#1a1a1a', line: '#5c5c5c', line2: '#9a9a9a', text: '#ffffff', muted: '#e6e6e6', dim: '#b3b3b3', accent: '#ffe600', accentInk: '#000000', blue: '#5cb8ff', green: '#4dff4d', red: '#ff5c5c', purple: '#ff80ff', teal: '#33ffff', term: '#000000', termfg: '#ffffff' },
+    ansi('#000000', '#ffffff', '#ffe600', 'rgba(255,230,0,.35)', ['#000000', '#ff5c5c', '#4dff4d', '#ffff33', '#5c9dff', '#ff66ff', '#33ffff', '#e6e6e6'], ['#808080', '#ff8080', '#80ff80', '#ffff80', '#80b3ff', '#ff99ff', '#80ffff', '#ffffff']),
+  ),
+  palette(
+    'paper',
+    'Paper',
+    'light',
+    // Off-white paper, near-black ink and a burnt-orange accent.
+    { bg: '#efebe2', panel: '#fbfaf6', raised: '#ffffff', elev: '#ffffff', line: '#e2dccf', line2: '#c9c0ad', text: '#1f1d1a', muted: '#4d4840', dim: '#8a8374', accent: '#c2410c', accentInk: '#ffffff', blue: '#1f5fa8', green: '#3a7d2a', red: '#b3261e', purple: '#8a3ea8', teal: '#1f7d80', term: '#fbfaf6', termfg: '#2b2925' },
+    ansi('#fbfaf6', '#2b2925', '#c2410c', 'rgba(194,65,12,.18)', ['#1f1d1a', '#b3261e', '#3a7d2a', '#9a6a00', '#1f5fa8', '#8a3ea8', '#1f7d80', '#d9d3c5'], ['#6b665c', '#d1452b', '#4f9a3b', '#b78400', '#3a7bd1', '#a857c7', '#2e9a9d', '#fbfaf6']),
   ),
 ];
 
