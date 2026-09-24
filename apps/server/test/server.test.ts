@@ -24,7 +24,7 @@ describe('auth', () => {
   });
 
   it('refuses setup from a non-local client without the token', async () => {
-    const r = await srv.app.inject({ method: 'POST', url: '/api/auth/setup', remoteAddress: '192.168.0.50', headers: { 'x-cayrnx': '1' }, payload: { password: 'correct horse battery' } });
+    const r = await srv.app.inject({ method: 'POST', url: '/api/auth/setup', remoteAddress: '192.0.2.50', headers: { 'x-cayrnx': '1' }, payload: { password: 'correct horse battery' } });
     expect(r.statusCode).toBe(403);
     // A proxied request from loopback (tunnel sidecar) is not local either.
     const r2 = await srv.app.inject({ method: 'POST', url: '/api/auth/setup', headers: { 'x-cayrnx': '1', 'x-forwarded-for': '1.2.3.4' }, payload: { password: 'correct horse battery' } });
