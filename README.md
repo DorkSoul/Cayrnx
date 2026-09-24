@@ -72,8 +72,11 @@ that you (or a fresh agent session) can open later.
   available, but off by default.
 - **Mobile.** A full phone layout: section sheets, a composer for staged text, a foldable top
   bar for more terminal room, and swipe gestures.
-- **Resource limits.** Caps on running CLIs, an idle timeout for background projects, and
-  stopping CLIs when you archive a change. Busy CLIs and pending approvals are never stopped.
+- **Resource limits.** At most 13 CLIs running at once (the longest-idle one stops first),
+  background CLIs stopped after 24 hours idle, and CLIs stopped when you archive a change. The
+  idle clock restarts whenever you open the tab, reload the page or type in it, so long-running
+  work you keep checking on stays up. Busy CLIs and pending approvals are never stopped. All of
+  it is adjustable in *Settings → Running CLIs*.
 - **Bundled `/grill-me` skill.** Matt Pocock's `grill-me` skill is available in every Claude
   Code and OpenCode tab. Use it when you want an agent to question you until the brief is clear
   (see [Skills](#skills-grill-me)). Nothing runs it for you.

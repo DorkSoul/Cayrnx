@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TabStatus } from '@cayrnx/shared';
-import { sandbox, startServer, until } from './helpers.ts';
+import { defaultSettings, type TabStatus } from '@cayrnx/shared';
+import { sandbox, sleep, startServer, until } from './helpers.ts';
 
 // Background limits (Settings → Running CLIs) and the briefs .gitignore rule's migration.
 
@@ -111,6 +111,27 @@ describe('background limits', () => {
     await srv.api('PATCH', '/api/settings', { resources: { idleStopMinutes: 0 } });
     for (const id of [bg.id, fg.id]) await srv.api('DELETE', `/api/tabs/${id}`);
     sock.ws.close();
+  });
+
+  it('opening a background tab (or a page load attaching it) restarts its idle clock', async () => {
+    const sock = await srv.ws();
+    sock.ws.send(JSON.stringify({ t: 'view', projectId: pid }));
+    await srv.api('PATCH', '/api/settings', { resources: { idleStopMinutes: 1 } });
+    const bg = await launch(plainPid, 'watched', null);
+    await settle([bg.id]);
+    // Looked at just now: it stays up past the sweep even though it has been idle over a minute.
+    sock.ws.send(JSON.stringify({ t: 'attach', tab: bg.id, cols: 80, rows: 24 }));
+    await sock.wait((m) => m.t === 'replay' && m.tab === bg.id);
+    (srv.core.tabs as any).lastSweep = 0;
+    await sleep(2500);
+    expect((await tab(bg.id)).proc).toBe('running');
+    await srv.api('PATCH', '/api/settings', { resources: { idleStopMinutes: 0 } });
+    await srv.api('DELETE', `/api/tabs/${bg.id}`);
+    sock.ws.close();
+  });
+
+  it('a fresh install allows 13 running CLIs and stops background ones after 24 h idle', () => {
+    expect(defaultSettings().resources).toMatchObject({ maxRunning: 13, idleStopMinutes: 1440 });
   });
 
   it('leaving a project can stop its idle CLIs; archiving a change stops its CLIs', async () => {

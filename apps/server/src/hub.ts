@@ -99,6 +99,7 @@ export class Hub {
         if (typeof m.data === 'string' && m.data.length <= 1024 * 1024) this.tabs.input(m.tab, m.data);
         break;
       case 'focus':
+        this.tabs.seen(m.tab);
         this.sizer.set(m.tab, c);
         this.tabs.resize(m.tab, m.cols, m.rows);
         break;

@@ -76,7 +76,7 @@ export function defaultSettings(_o: { docker?: boolean } = {}): Settings {
       opencode: { enabled: true, bin: 'opencode', hooks: false, extraArgs: '' },
     },
     notifications: { approval: false, finished: false, sound: false },
-    resources: { maxRunning: 8, idleStopMinutes: 120, onProjectSwitch: 'ask', stopOnArchive: true },
+    resources: { maxRunning: 13, idleStopMinutes: 1440, onProjectSwitch: 'ask', stopOnArchive: true },
     access: {
       // Nothing preset: the setup wizard asks (in Docker, the mounted projects folder is suggested).
       allowedRoots: [],

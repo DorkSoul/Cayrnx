@@ -701,8 +701,18 @@ export class TabManager extends EventEmitter {
 
   /* ---------------- clients ---------------- */
 
+  /**
+   * You looked at or used the tab (opened it, a page load or reconnect attached it, you typed):
+   * the idle clock for the automatic stops starts again, so long-running work you check on stays up.
+   */
+  seen(id: string): void {
+    const t = this.tabs.get(id);
+    if (t) t.idleSince = Math.max(t.idleSince, Date.now());
+  }
+
   attach(id: string, sink: Sink): () => void {
     const t = this.tab(id);
+    this.seen(id);
     const buf: string[] = [];
     t.attaching.set(sink, buf);
     // Wait for the headless parser to catch up so the replay and the live stream don't overlap.
@@ -740,6 +750,7 @@ export class TabManager extends EventEmitter {
     if (!t?.pty) return;
     t.pty.write(data);
     t.lastInput = Date.now();
+    this.seen(id);
     // A Read/Write added to the prompt counts once the prompt is submitted.
     if (data.includes('\r')) {
       if (!t.firstSubmit) t.firstSubmit = Date.now();
