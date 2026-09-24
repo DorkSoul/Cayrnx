@@ -240,7 +240,9 @@ More detail is in [`docs/deploy.md`](docs/deploy.md).
 - **Board:** *Terminals / Board* in the top bar.
 - **Settings:** appearance (themes, fonts, CLI colours), services (paths, extra args, install,
   log in, Codex skills), briefs (message templates, unread mode, worktree default), running-CLI
-  limits, notifications, and access & security.
+  limits, notifications, access & security, and *Install app*: adds Cayrnx to your phone's home
+  screen (Android Chrome: an install button; iOS Safari: Share → Add to Home Screen). Chrome needs
+  HTTPS or localhost, and the section is hidden when you're already in the installed app.
 - **Setups:** layouts, change types (brief templates and default layout) and doc types, or edit
   the raw registry JSON.
 

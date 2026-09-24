@@ -65,3 +65,25 @@ test('mobile shell: overlays, sheets, composer, overflow', async ({ page }) => {
   expect(overflow).toBe(false);
   if (process.env.E2E_SHOTS) await page.screenshot({ path: path.join(process.env.E2E_SHOTS, `mobile-add-cli-${test.info().project.name}.png`) });
 });
+
+// Settings → Install app: Safari gets the Add to Home Screen steps, Chrome its install button or
+// the browser-menu hint; the whole group is gone when running as the installed app.
+test('install app: offered in the browser, hidden in the installed app', async ({ page, browserName }) => {
+  await signIn(page);
+  await page.getByTestId('rail-settings').click();
+  const group = page.locator('#set-install');
+  await expect(group).toContainText('Adds Cayrnx to your home screen');
+  if (browserName === 'webkit') await expect(page.getByTestId('install-ios')).toContainText('Add to Home Screen');
+  else await expect(page.getByTestId('install-ios')).toHaveCount(0);
+
+  // Pretend to be the home-screen app (display-mode: standalone).
+  await page.addInitScript(() => {
+    const mm = window.matchMedia.bind(window);
+    window.matchMedia = (q: string) => (/display-mode:\s*standalone/.test(q) ? ({ ...mm(q), matches: true, media: q, addEventListener() {}, removeEventListener() {} } as MediaQueryList) : mm(q));
+  });
+  await page.reload();
+  await page.getByTestId('rail-settings').click();
+  await expect(page.locator('#set-about')).toBeVisible();
+  await expect(group).toHaveCount(0);
+  await expect(page.locator('.anchor', { hasText: 'Install app' })).toHaveCount(0);
+});

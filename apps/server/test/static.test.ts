@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.ts';
-import { sandbox } from './helpers.ts';
+import { REPO, sandbox } from './helpers.ts';
 
 // Serving the built SPA: a rebuild while the server runs must be picked up, never answered
 // with index.html for a script (the browser then refuses it and the page stays blank).
@@ -49,5 +49,21 @@ describe('static SPA', () => {
     expect(route.body).toContain('index-NEW.js');
 
     expect((await app.inject({ url: '/api/nope' })).statusCode).toBeGreaterThanOrEqual(400);
+  });
+
+  it('serves the app manifest, and every icon it lists exists', async () => {
+    const pub = path.join(REPO, 'apps', 'web', 'public');
+    const manifest = fs.readFileSync(path.join(pub, 'manifest.webmanifest'), 'utf8');
+    fs.writeFileSync(path.join(web, 'manifest.webmanifest'), manifest);
+    const res = await app.inject({ url: '/manifest.webmanifest' });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toMatch(/manifest\+json/);
+
+    const m = JSON.parse(manifest);
+    expect(m.display).toBe('standalone');
+    const sizes = m.icons.map((i: { sizes: string }) => i.sizes);
+    expect(sizes).toEqual(expect.arrayContaining(['192x192', '512x512'])); // Chrome's install minimum
+    for (const icon of m.icons) expect(fs.existsSync(path.join(pub, icon.src))).toBe(true);
+    expect(fs.existsSync(path.join(pub, 'apple-touch-icon.png'))).toBe(true);
   });
 });

@@ -15,6 +15,7 @@ import './styles/app.css';
 import './styles/mobile.css';
 import { App } from './App.tsx';
 import { ignorePasswordManagers } from './nofill.ts';
+import './pwa.ts'; // catches the browser's install prompt before React mounts
 import { paletteCss } from './themes.ts';
 
 ignorePasswordManagers();

@@ -164,3 +164,5 @@
 .mx .seg{flex-wrap:wrap}
 .mx .seg button{flex:1 0 auto;padding:0 10px}
 .mx .svccard .svchead{flex-direction:column;gap:4px;font-size:13px}
+/* Installed app on iOS: the page runs under the home indicator (viewport-fit=cover), so stop short of it. */
+@media (display-mode: standalone){.cx{height:calc(100dvh - env(safe-area-inset-bottom, 0px))}}

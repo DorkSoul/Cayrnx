@@ -6,6 +6,7 @@ import { curProject, errToast, logout, openDialog, refreshProjects, saveSettings
 import { Glyph, Popover, Seg, Switch } from '../components/common.tsx';
 import { cls, copyText, downloadJson, readFileText, relTime } from '../util.ts';
 import { THEME_OPTIONS, paletteById } from '../themes.ts';
+import { promptInstall, useInstallState } from '../pwa.ts';
 
 function Group({ id, title, children, last }: { id: string; title: ReactNode; children: ReactNode; last?: boolean }) {
   return (
@@ -249,6 +250,39 @@ function ServiceRow({ id, st, det, onDet }: { id: ServiceId; st: Settings; det?:
 }
 
 /* ---------------- access & security ---------------- */
+
+// Hidden when Cayrnx is already running as the installed app.
+function InstallGroup() {
+  const state = useInstallState();
+  if (state === 'standalone') return null;
+  const install = async () => {
+    try {
+      if (await promptInstall()) toast('Cayrnx installed', 'ok');
+    } catch (e) {
+      errToast(e);
+    }
+  };
+  return (
+    <Group id="set-install" title="Install app">
+      <div className="note" style={{ marginBottom: 10 }}>
+        Adds Cayrnx to your home screen or app list. It opens in its own window, without the browser's address bar.
+      </div>
+      {state === 'prompt' && (
+        <button className="btn sm primary" onClick={() => void install()} data-testid="install-app">
+          Install Cayrnx
+        </button>
+      )}
+      {state === 'installed' && <div className="note">Installed. Open it from your home screen or app list.</div>}
+      {state === 'ios' && (
+        <div className="note" data-testid="install-ios">
+          In Safari, tap <b>Share</b> (the square with the arrow), then <b>Add to Home Screen</b>.
+        </div>
+      )}
+      {state === 'insecure' && <div className="note">Browsers only install apps over HTTPS or on localhost. Open Cayrnx through your HTTPS address to install it.</div>}
+      {state === 'manual' && <div className="note">Open your browser's menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</div>}
+    </Group>
+  );
+}
 
 function PasswordForm() {
   const [cur, setCur] = useState('');
@@ -682,6 +716,7 @@ export function SettingsPanel({ mobile }: { mobile?: boolean }) {
   const st = s.settings;
   const [dets, setDets] = useState<Record<string, ServiceDetect>>({});
   const [fontPick, setFontPick] = useState(false);
+  const installState = useInstallState();
   useEffect(() => {
     void get<ServiceDetect[]>('/api/services').then((list) => setDets(Object.fromEntries(list.map((d) => [d.id, d]))), () => undefined);
   }, [st?.services.claude.bin, st?.services.codex.bin, st?.services.opencode.bin]);
@@ -720,6 +755,7 @@ export function SettingsPanel({ mobile }: { mobile?: boolean }) {
     ['set-notif', 'Notifications'],
     ['set-access', 'Access'],
     ['set-projects', 'Projects'],
+    ...(installState === 'standalone' ? [] : [['set-install', 'Install app']]),
     ['set-about', 'About'],
   ];
   return (
@@ -936,6 +972,7 @@ export function SettingsPanel({ mobile }: { mobile?: boolean }) {
 
         <AccessGroup st={st} />
         <ProjectsGroup />
+        <InstallGroup />
 
         <Group id="set-about" title="About" last>
           <Row label="Cayrnx">
