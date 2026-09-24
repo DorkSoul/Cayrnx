@@ -24,6 +24,7 @@ import { TiledView } from './Tiled.tsx';
 import { BoardView } from './Board.tsx';
 import { post } from '../api.ts';
 import { DocView, FileView, GitHistoryView } from './DocView.tsx';
+import { GitDiffView } from './GitDiff.tsx';
 
 /** S17 — no project open: open a folder, or pick a recent project. */
 export function NoProject() {
@@ -198,6 +199,7 @@ export function MainArea({ withStrip = true }: { withStrip?: boolean }) {
         {doc && doc.kind === 'doc' && docChange && <DocView key={doc.id} d={doc} change={docChange} />}
         {doc && doc.kind === 'file' && <FileView key={doc.id} d={doc} />}
         {doc && doc.kind === 'git' && <GitHistoryView key={doc.id} d={doc} />}
+        {doc && doc.kind === 'diff' && <GitDiffView key={doc.id} d={doc} />}
         {!term && (!doc || (doc.kind === 'doc' && !docChange)) && <NoTabs />}
       </div>
     </>

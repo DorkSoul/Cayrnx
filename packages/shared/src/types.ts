@@ -361,6 +361,42 @@ export interface SkillsInfo {
   codex: { dir: string; installed: string[] };
 }
 
+/* ---------------- git changes (the Changes panel) ---------------- */
+
+/** M modified · A added · D deleted · R renamed · U untracked · C conflict. */
+export type GitChangeStatus = 'M' | 'A' | 'D' | 'R' | 'U' | 'C';
+
+export interface GitChange {
+  /** Relative to the repository's top folder. */
+  path: string;
+  /** A rename's old path. */
+  from?: string;
+  status: GitChangeStatus;
+  /** Lines added / removed (null for binary files). */
+  add: number | null;
+  del: number | null;
+}
+
+export interface GitChanges {
+  repo: boolean;
+  /** The repository's top folder (paths are relative to it). */
+  top: string;
+  branch: string | null;
+  /** In the index: what `git commit` would record now. */
+  staged: GitChange[];
+  /** In the working tree, not staged yet (untracked files included). */
+  changes: GitChange[];
+}
+
+export interface GitFileDiff {
+  /** The repository's top folder. */
+  top: string;
+  /** Unified diff text from git. */
+  text: string;
+  binary: boolean;
+  truncated: boolean;
+}
+
 /** One model's share of a change (the token breakdown table). */
 export interface ModelUsageRow extends TokenUsage {
   service: ServiceId;

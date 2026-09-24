@@ -99,7 +99,7 @@ test.describe.serial('core loop (spec §1) with fake CLIs', () => {
     expect(submits()).toContain(`Look into the refresh race. ${preview}`);
     await expect(page.getByTestId('tab-coder').locator('.st-updated')).toBeVisible();
     await expect(page.getByTestId('badge-cluster')).toContainText('1');
-    await expect(page.locator('.rbadge')).toBeVisible();
+    await expect(page.getByTestId('rail-briefs').locator('.rbadge')).toBeVisible();
   });
 
   test('not saved: the agent says done but the file never appears', async ({ page }) => {

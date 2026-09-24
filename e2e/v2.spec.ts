@@ -332,6 +332,23 @@ test.describe.serial('V2 / V3', () => {
     await page.getByRole('button', { name: 'Cancel' }).click();
   });
 
+  test('Changes: uncommitted files and their diff, side by side or inline', async ({ page }) => {
+    await signIn(page);
+    await pickChange(page, 'login-timeout');
+    await page.getByTestId('rail-changes').click();
+    const row = page.getByTestId('gc-work-src/auth/session.ts');
+    await expect(row).toContainText('+1');
+    await row.click();
+    const diff = page.getByTestId('git-diff');
+    await expect(diff).toBeVisible();
+    await expect(diff.locator('.gdt.add')).toContainText('// wip');
+    await expect(diff.locator('.gdrow').first().locator('.gdn')).toHaveCount(2);
+    await shot(page, 'v2-git-diff');
+    await page.getByTestId('diff-inline').click();
+    await expect(diff.locator('.gdsign', { hasText: '+' }).first()).toBeVisible();
+    await page.getByTestId('diff-split').click();
+  });
+
   test('an archived change can be deleted, after a confirmation', async ({ page }) => {
     await signIn(page);
     const archived = page.locator('.secthead', { hasText: 'Archived' });

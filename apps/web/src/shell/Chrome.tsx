@@ -9,11 +9,21 @@ import { cls, midTrunc } from '../util.ts';
 
 export const RAIL: [PanelId, string, string][] = [
   ['files', 'Files', I.files],
+  ['changes', 'Changes (git diff)', I.diff],
   ['briefs', 'Briefs', I.briefs],
   ['history', 'History', I.history],
   ['setups', 'Setups', I.setups],
   ['settings', 'Settings', I.settings],
 ];
+
+/** Uncommitted files in the current change's folder (from the Files listing's git status). */
+export function changedFiles(s: ReturnType<typeof useStore.getState>): number {
+  const p = curProject(s);
+  const c = curChange(s);
+  const cwd = c ? c.cwd : p?.path || '';
+  const tree = cwd ? (s.trees[cwd] as TreeData | undefined) : undefined;
+  return tree && 'git' in tree ? Object.keys(tree.git).length : 0;
+}
 
 /** The sun/moon button: flips dark ↔ light on the Cayrnx theme (leaving a colour theme). */
 export function toggleTheme(): void {
@@ -23,6 +33,7 @@ export function toggleTheme(): void {
 export function Rail() {
   const s = useStore();
   const unread = unreadTotal(s);
+  const changed = changedFiles(s);
   const dark = effectiveTheme(s) === 'dark';
   return (
     <nav className="rail" aria-label="Sections">
@@ -33,6 +44,7 @@ export function Rail() {
         <button key={id} className={cls('rbtn', s.panel === id && s.panelOpen && 'on')} onClick={() => openPanel(id)} aria-label={label} title={label} data-testid={`rail-${id}`}>
           <Icon d={icon} size={20} />
           {id === 'briefs' && unread > 0 && <span className="rbadge">{unread}</span>}
+          {id === 'changes' && changed > 0 && <span className="rbadge soft">{changed}</span>}
         </button>
       ))}
       <div style={{ flexGrow: 1 }} />

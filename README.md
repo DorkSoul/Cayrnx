@@ -60,6 +60,11 @@ that you (or a fresh agent session) can open later.
   or copy its resume command. Tabs survive a server restart with **Resume session**.
 - **Files, diffs and git.** A file tree, a markdown viewer with `path:line` links, a diff against
   the previous version of any doc, and git history.
+- **Changes (git diff).** Like VS Code's Source Control view, a panel lists every uncommitted file
+  in the change's folder. Files are split into *staged* and *not staged* (new files included),
+  with lines added and removed. Click a file to see its diff side by side or inline, with line
+  numbers, or the whole file. It refreshes as the agents work, so you can check exactly what
+  changed before you commit. It's read-only: commit from a terminal tab.
 - **Themes that reach the CLIs.** Fifteen colour themes, each with its own tinted surfaces and
   accent, restyle the app *and* the CLIs: Cayrnx (dark/light), Dracula, Nord, Solarized
   Dark/Light, Gruvbox, Tokyo Night, Catppuccin Mocha, One Dark, Cyberpunk, Green Phosphor,

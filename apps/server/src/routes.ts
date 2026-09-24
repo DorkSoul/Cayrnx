@@ -28,7 +28,7 @@ import { clientIp, isLocalRequest, requestProto } from './http.ts';
 import { HttpError, guardPath, underAny } from './util/paths.ts';
 import { createChange, deleteChange, deleteLatest, getChange, prune, readDoc, removeWorktree, saveDoc, scanChanges, updateMeta } from './briefs.ts';
 import { browseFolders, listTree, readTextFile } from './files.ts';
-import { git } from './util/git.ts';
+import { git, gitChanges, gitFileDiff } from './util/git.ts';
 import { detect, listAgents, listModels } from './services.ts';
 import { codexHome, listSessions, resumeCommand, sessionTokens } from './sessions.ts';
 import { bundledSkills } from './core.ts';
@@ -417,6 +417,30 @@ export function registerRoutes(app: FastifyInstance, core: Core): void {
         const [sha, at, author, ...rest] = l.split('\t');
         return { sha, at: Number(at) * 1000, author, subject: rest.join('\t') };
       });
+  });
+
+  // The Changes panel: what changed in the change's folder since the last commit, and each file's diff.
+  app.get('/api/projects/:id/git-changes', async (req) => {
+    const p = project(req);
+    return gitChanges(guardPath(str((req.query as any).root) || p.path, fileRoots(p), 'Folder'));
+  });
+
+  app.get('/api/projects/:id/git-diff', async (req) => {
+    const p = project(req);
+    const q = req.query as any;
+    const dir = guardPath(str(q.root) || p.path, fileRoots(p), 'Folder');
+    const c = await gitChanges(dir);
+    if (!c.repo) throw new HttpError(400, 'Not a git repository');
+    const file = str(q.path);
+    const staged = q.staged === '1';
+    // Only files git lists as changed, so the path can't point anywhere else.
+    const hit = (staged ? c.staged : c.changes).find((x) => x.path === file);
+    if (!hit) throw new HttpError(404, `${file} has no ${staged ? 'staged' : 'unstaged'} changes`);
+    try {
+      return await gitFileDiff(c.top, hit.path, { staged, untracked: hit.status === 'U', from: hit.from, context: q.full === '1' ? 100000 : 3 });
+    } catch (e) {
+      throw new HttpError(500, (e as Error).message);
+    }
   });
 
   app.get('/api/projects/:id/file', async (req) => {

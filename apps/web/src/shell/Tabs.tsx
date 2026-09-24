@@ -33,6 +33,7 @@ import { tabLabel, tabMeta, tabTooltip, tunedNote } from './Terminal.tsx';
 
 function docTabTitle(d: DocTab, change: Change | null): { role: string; meta: string; full: string } {
   if (d.kind === 'file') return { role: basename(d.path || ''), meta: 'file', full: d.path || '' };
+  if (d.kind === 'diff') return { role: basename(d.path || ''), meta: d.staged ? 'staged diff' : 'diff', full: `${d.staged ? 'staged changes' : 'changes'} in ${d.path}` };
   if (d.kind === 'git') return { role: basename(d.path || ''), meta: 'git log', full: `git history of ${d.path}` };
   const vs = change?.docs.filter((x) => x.type === d.type) || [];
   const n = d.n ?? vs[vs.length - 1]?.n ?? 1;

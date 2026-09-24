@@ -28,6 +28,7 @@ import { Backdrop, Dots, Glyph, Popover, StateChip, SwipeOverlay, Toasts, docTyp
 import { DialogHost } from '../dialogs/DialogHost.tsx';
 import { BriefsPanel } from '../panels/BriefsPanel.tsx';
 import { FilesPanel } from '../panels/FilesPanel.tsx';
+import { ChangesPanel } from '../panels/ChangesPanel.tsx';
 import { HistoryPanel } from '../panels/HistoryPanel.tsx';
 import { SetupsPanel } from '../panels/SetupsPanel.tsx';
 import { SettingsPanel } from '../panels/SettingsPanel.tsx';
@@ -38,12 +39,14 @@ import { clearTerminal, setTerminalRoot } from '../terminals.ts';
 import { basename, cls } from '../util.ts';
 import { MainArea } from './Main.tsx';
 import { tabLabel, tabMeta, tunedNote } from './Terminal.tsx';
-import { PanelResize, RAIL, Rail, StatusBar, TopBar, toggleTheme } from './Chrome.tsx';
+import { PanelResize, RAIL, Rail, StatusBar, TopBar, changedFiles, toggleTheme } from './Chrome.tsx';
 
 export function PanelBody({ id, mobile }: { id: PanelId; mobile?: boolean }) {
   switch (id) {
     case 'files':
       return <FilesPanel mobile={mobile} />;
+    case 'changes':
+      return <ChangesPanel mobile={mobile} />;
     case 'briefs':
       return <BriefsPanel mobile={mobile} />;
     case 'history':
@@ -111,7 +114,7 @@ export function DesktopShell() {
 
 /* ---------------- mobile (S18) ---------------- */
 
-const TITLES: Record<PanelId, string> = { files: 'Files', briefs: 'Briefs', history: 'History', setups: 'Setups', settings: 'Settings' };
+const TITLES: Record<PanelId, string> = { files: 'Files', changes: 'Changes', briefs: 'Briefs', history: 'History', setups: 'Setups', settings: 'Settings' };
 
 function useKeyboardInset(): number {
   const [kb, setKb] = useState(0);
@@ -210,7 +213,7 @@ function MobileTabs() {
         <button key={d.id} className={cls('tab', d.id === active && 'on')} onClick={() => setActive(d.id)} role="tab" aria-selected={d.id === active}>
           <Icon d={I.file} size={16} cls={d.kind === 'doc' ? docTypeCls(d.type || '') : 'fx-md'} />
           <span className="ell" style={{ fontSize: 13, fontWeight: 500 }}>
-            {d.kind === 'doc' ? `${d.type}-${String(d.n).padStart(3, '0')}` : d.kind === 'git' ? `git · ${basename(d.path || '')}` : basename(d.path || '')}
+            {d.kind === 'doc' ? `${d.type}-${String(d.n).padStart(3, '0')}` : d.kind === 'git' ? `git · ${basename(d.path || '')}` : d.kind === 'diff' ? `diff · ${basename(d.path || '')}` : basename(d.path || '')}
           </span>
         </button>
       ))}
@@ -318,6 +321,7 @@ export function MobileShell() {
   const { approvals, updates } = attentionTabs(s.tabs);
   const attn = approvals.length + updates.length;
   const unread = unreadTotal(s);
+  const changed = changedFiles(s);
   const id = activeTabId(s);
   const composerUp = !!(id && s.staged[id] && !s.staged[id].min && s.staged[id].text);
   // Only folded while the toolbar (with its show button) is on screen.
@@ -351,6 +355,7 @@ export function MobileShell() {
             <button key={pid} className={cls('tb', s.section === pid && 'on')} onClick={() => openPanel(pid)} aria-label={label} data-testid={`rail-${pid}`}>
               <Icon d={icon} size={21} />
               {pid === 'briefs' && unread > 0 && <span className="badge">{unread}</span>}
+            {pid === 'changes' && changed > 0 && <span className="badge soft">{changed}</span>}
             </button>
           ))}
           <span className="grow" />

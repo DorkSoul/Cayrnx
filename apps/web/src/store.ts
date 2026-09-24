@@ -41,10 +41,13 @@ export interface DocTab {
   projectId: string;
   /** Change slug or null (workspace). */
   change: string | null;
-  kind: 'doc' | 'file' | 'git';
+  kind: 'doc' | 'file' | 'git' | 'diff';
   type?: string;
   n?: number;
   path?: string;
+  /** diff: the folder it was opened from (the change's cwd), and staged vs working tree. */
+  root?: string;
+  staged?: boolean;
 }
 
 export interface Staged {
@@ -59,7 +62,7 @@ export interface Toast {
   kind: ToastKind;
 }
 
-export type PanelId = 'files' | 'briefs' | 'history' | 'setups' | 'settings';
+export type PanelId = 'files' | 'changes' | 'briefs' | 'history' | 'setups' | 'settings';
 
 export type Dialog =
   | { kind: 'new' }
@@ -651,6 +654,23 @@ export function openFile(path: string): void {
     docTabs: exists ? s.docTabs : [...s.docTabs.filter((d) => d.id !== id), { id, projectId: pid, change, kind: 'file', path }],
     active: { ...s.active, [activeKey(pid, key)]: id },
     pop: null,
+    section: null,
+  });
+}
+
+/** Changes panel: a file's uncommitted diff (staged or working tree) as a read-only tab. */
+export function openGitDiff(root: string, path: string, staged: boolean): void {
+  const s = S();
+  const pid = s.projectId;
+  const key = curKey(s);
+  if (!pid || !key) return;
+  const change = key === WORKSPACE ? null : key;
+  const id = `diff-${pid}-${staged ? 'i' : 'w'}-${root}-${path}`;
+  set({
+    docTabs: s.docTabs.some((d) => d.id === id) ? s.docTabs : [...s.docTabs, { id, projectId: pid, change, kind: 'diff', path, root, staged }],
+    active: { ...s.active, [activeKey(pid, key)]: id },
+    pop: null,
+    popAt: null,
     section: null,
   });
 }
