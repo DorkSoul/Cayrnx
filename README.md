@@ -26,7 +26,9 @@ that you (or a fresh agent session) can open later.
 - [Development](#development)
 - [Security model](#security-model)
 - [Status and limitations](#status-and-limitations)
+- [Contributing](#contributing)
 - [Credits](#credits)
+- [License](#license)
 
 ---
 
@@ -338,8 +340,20 @@ multi-user accounts.
 - A managed `opencode serve` (event stream instead of screen detection) isn't built.
 - The Docker image is defined but hasn't been through a full release build yet.
 
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR, run `pnpm typecheck`, `pnpm test` and
+`pnpm build && pnpm test:e2e`. The tests only use the fake CLIs, so they never touch your real
+Claude/Codex/OpenCode logins. Match the style of the code around your change, and add a test for
+new behaviour.
+
 ## Credits
 
 - `grill-me` / `grilling` skills by [Matt Pocock](https://github.com/mattpocock/skills), MIT;
   see `apps/server/skills/LICENSE-mattpocock-skills`.
 - Built with Claude Code.
+
+## License
+
+[MIT](LICENSE) © 2026 Luke Hallinan. The bundled `grill-me` / `grilling` skills keep their own
+MIT licence (`apps/server/skills/LICENSE-mattpocock-skills`).

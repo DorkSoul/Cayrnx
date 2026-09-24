@@ -1,6 +1,7 @@
 {
   "name": "cayrnx-workspace",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@12.4.1",
   "engines": {

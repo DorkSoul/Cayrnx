@@ -1,6 +1,7 @@
 {
   "name": "cayrnx",
   "version": "0.1.0",
+  "license": "MIT",
   "description": "Coordinate coding-agent CLIs around markdown briefs — self-hosted web app.",
   "type": "module",
   "bin": { "cayrnx": "./bin/cayrnx.js" },
