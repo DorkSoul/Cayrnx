@@ -1,0 +1,274 @@
+
+</helmet>
+<div class="mx {{themeCls}}" style="width: 390px; height: 844px; display: flex; flex-direction: column;">
+
+<!-- top bar (condensed) -->
+<div class="topbar">
+<svg sc-camel-view-box="0 0 24 24" width="24" height="24" style="fill: var(--accent); flex-shrink: 0; margin-right: 4px;"><ellipse cx="12" cy="18.6" rx="8" ry="3"></ellipse><ellipse cx="11.2" cy="12.4" rx="5.6" ry="2.6"></ellipse><ellipse cx="12.4" cy="7" rx="3.4" ry="2.1"></ellipse></svg>
+<button class="csel" sc-camel-on-click="{{openChangeSheet}}" aria-label="Switch change">
+<span class="tchip tc-{{cur.type}}">{{cur.type}}</span>
+<span class="ell grow" style="font-weight: 500; font-size: 13.5px;">{{cur.name}}</span>
+<svg class="ic dim" sc-camel-view-box="0 0 24 24" width="14" height="14"><path d="{{I.down}}"></path></svg>
+</button>
+<button class="tb" sc-camel-on-click="{{openNew}}" aria-label="New change" style="color: var(--accent);"><svg class="ic" sc-camel-view-box="0 0 24 24" width="22" height="22"><path d="{{I.plus}}"></path></svg></button>
+<button class="tb" sc-camel-on-click="{{openBadge}}" aria-label="Attention: {{attnCount}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.bell}}"></path></svg><sc-if value="{{hasAttn}}" hint-placeholder-val="{{true}}"><span class="badge" style="background: var(--blue); color: #0b1426;">{{attnCount}}</span></sc-if></button>
+<button class="tb" sc-camel-on-click="{{openOverflow}}" aria-label="More"><svg class="ic fat" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.kebab}}"></path></svg></button>
+</div>
+
+<!-- icon bar (rail → top) -->
+<nav class="iconbar" aria-label="Sections">
+<sc-for list="{{icons}}" as="r" hint-placeholder-count="5">
+<button class="tb {{r.cls}}" sc-camel-on-click="{{r.pick}}" aria-label="{{r.label}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="21" height="21"><path d="{{r.icon}}"></path></svg><sc-if value="{{r.hasBadge}}" hint-placeholder-val="{{false}}"><span class="badge">{{r.badge}}</span></sc-if></button>
+</sc-for>
+<span class="grow"></span>
+<span class="dim" style="font-size: 11px; white-space: nowrap;">{{sectionHint}}</span>
+</nav>
+
+<!-- compact tab strip -->
+<div class="tabs">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button class="tab {{t.cls}}" sc-camel-on-click="{{t.pick}}" title="{{t.full}}">
+<sc-if value="{{t.isTerm}}" hint-placeholder-val="{{true}}"><span class="glyph {{t.gcls}}">{{t.glyph}}</span></sc-if>
+<sc-if value="{{t.isDoc}}" hint-placeholder-val="{{false}}"><svg class="ic ty-{{t.tcls}}" sc-camel-view-box="0 0 24 24" width="16" height="16"><path d="{{I.file}}"></path></svg></sc-if>
+<span class="stc st-{{t.state}}"></span>
+<span class="ell" style="font-size: 13px; font-weight: 500;">{{t.role}}</span>
+</button>
+</sc-for>
+</div>
+
+<!-- icon toolbar -->
+<sc-if value="{{atIsTerm}}" hint-placeholder-val="{{true}}">
+<div class="toolbar">
+<button class="tbtn {{readRing}}" sc-camel-on-click="{{openRead}}" aria-label="Read (stage)" title="Read ▾ — stages only"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.read}}"></path></svg></button>
+<button class="tbtn write" sc-camel-on-click="{{openWrite}}" aria-label="Write (send)" title="Write ▾ — sends"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.write}}"></path></svg></button>
+<sc-if value="{{showChip}}" hint-placeholder-val="{{false}}"><button class="chip" sc-camel-on-click="{{restore}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="14" height="14"><path d="{{I.pencil}}"></path></svg>1</button></sc-if>
+<span class="grow dim" style="font-size: 11.5px; padding-left: 4px;">{{atFull}}</span>
+<button class="tb" sc-camel-on-click="{{clearTerm}}" aria-label="Clear terminal"><svg class="ic" sc-camel-view-box="0 0 24 24" width="18" height="18"><path d="{{I.clear}}"></path></svg></button>
+</div>
+</sc-if>
+
+<!-- terminal / doc -->
+<div style="flex-grow: 1; position: relative; display: flex; flex-direction: column; min-height: 0; background: var(--term);">
+<sc-if value="{{atIsTerm}}" hint-placeholder-val="{{true}}">
+<div class="term {{termPadCls}}"><div>
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="10"><div class="tl {{l.cls}}">{{l.text}}</div></sc-for>
+<sc-if value="{{showPrompt}}" hint-placeholder-val="{{true}}"><div class="tl"><span class="dim">&gt; </span><span class="cursor"></span></div></sc-if>
+</div></div>
+<sc-if value="{{showComposer}}" hint-placeholder-val="{{false}}">
+<div class="composer" style="bottom: {{composerBottom}}px;">
+<div class="row" style="gap: 6px; font-size: 11.5px; margin-bottom: 4px;">
+<span class="grow muted">✎ Staged — sent only when you tap Send</span>
+<button class="tb" style="width: 36px; height: 36px;" sc-camel-on-click="{{minimize}}" aria-label="Minimize"><svg class="ic" sc-camel-view-box="0 0 24 24" width="16" height="16"><path d="{{I.minus}}"></path></svg></button>
+<button class="tb" style="width: 36px; height: 36px;" sc-camel-on-click="{{clearStaged}}" aria-label="Clear"><svg class="ic" sc-camel-view-box="0 0 24 24" width="16" height="16"><path d="{{I.x}}"></path></svg></button>
+</div>
+<textarea rows="3" value="{{staged}}" sc-camel-on-change="{{editStaged}}" sc-camel-on-focus="{{kbOn}}" aria-label="Staged text"></textarea>
+<div class="row" style="gap: 8px; margin-top: 6px;">
+<sc-if value="{{kb}}" hint-placeholder-val="{{false}}"><button class="btn" style="height: 40px;" sc-camel-on-click="{{kbOff}}">Done</button></sc-if>
+<span class="grow"></span>
+<button class="btn primary" style="height: 40px;" sc-camel-on-click="{{send}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="16" height="16"><path d="{{I.enter}}"></path></svg>Send</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{kb}}" hint-placeholder-val="{{false}}">
+<div class="kb" aria-hidden="true">
+<span class="kbnote">soft keyboard · composer anchors above it (visualViewport)</span>
+<sc-for list="{{keys}}" as="kr" hint-placeholder-count="3"><div class="krow"><sc-for list="{{kr.k}}" as="k" hint-placeholder-count="10"><span class="key">{{k.c}}</span></sc-for></div></sc-for>
+<div class="krow"><span class="key" style="width: 80px; font-size: 13px;">123</span><span class="key" style="width: 180px; font-size: 13px;">space</span><span class="key" style="width: 80px; font-size: 13px;">return</span></div>
+</div>
+</sc-if>
+</sc-if>
+<sc-if value="{{atIsDoc}}" hint-placeholder-val="{{false}}">
+<div style="padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--panel);" class="row">
+<svg class="ic ty-{{doc.tcls}}" sc-camel-view-box="0 0 24 24" width="18" height="18"><path d="{{I.file}}"></path></svg>
+<span class="mono grow" style="font-weight: 600; margin-left: 8px;">{{doc.name}}</span>
+<span class="dim" style="font-size: 12px;">{{doc.ver}}</span>
+</div>
+<div style="flex-grow: 1; overflow-y: auto; padding: 18px 16px 30px; background: var(--bg);">
+<sc-for list="{{doc.blocks}}" as="b" hint-placeholder-count="8"><div class="md-{{b.kind}}"><sc-if value="{{b.isOl}}" hint-placeholder-val="{{false}}"><span class="oln">{{b.num}}.</span></sc-if><sc-if value="{{b.isLi}}" hint-placeholder-val="{{false}}"><span class="bul"></span></sc-if><span>{{b.text}}</span></div></sc-for>
+</div>
+<div class="row" style="gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--panel);"><button class="btn grow" sc-camel-on-click="{{doc.stage}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="16" height="16"><path d="{{I.read}}"></path></svg>Stage in planner</button><button class="btn" sc-camel-on-click="{{doc.close}}">Close</button></div>
+</sc-if>
+</div>
+
+<!-- condensed status bar -->
+<sc-if value="{{showStatus}}" hint-placeholder-val="{{true}}">
+<div class="status">
+<span class="schip mono"><svg class="ic" sc-camel-view-box="0 0 24 24" width="12" height="12"><path d="{{I.files}}"></path></svg>…/wt-bug-login-timeout</span>
+<span class="schip"><svg class="ic" sc-camel-view-box="0 0 24 24" width="12" height="12"><path d="{{I.branch}}"></path></svg>worktree</span>
+<span class="schip"><span class="dots"><sc-for list="{{cur.dots}}" as="d" hint-placeholder-count="5"><span class="dot {{d.cls}}"></span></sc-for></span>{{cur.status}}</span>
+<span class="schip"><span style="color: var(--accent);">●</span>git 2</span>
+<span class="schip">tokens 184k</span>
+</div>
+</sc-if>
+
+<!-- ===== SECTION OVERLAY (over the running terminal) ===== -->
+<sc-if value="{{hasSection}}" hint-placeholder-val="{{false}}">
+<div class="overlay" role="dialog" aria-label="{{sectionTitle}}">
+<div class="ohead">
+<span style="font-size: 17px; font-weight: 600;" class="grow">{{sectionTitle}}</span>
+<span class="dim" style="font-size: 11px;">terminal keeps running</span>
+<button class="tb" sc-camel-on-click="{{closeSection}}" aria-label="Close section"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.x}}"></path></svg></button>
+</div>
+<div class="obody">
+<sc-if value="{{secBriefs}}" hint-placeholder-val="{{true}}">
+<button class="btn primary wide" style="margin-bottom: 12px;" sc-camel-on-click="{{openNew}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="17" height="17"><path d="{{I.plus}}"></path></svg>New change</button>
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+<div class="card">
+<button class="crow" sc-camel-on-click="{{c.toggle}}" aria-expanded="{{c.open}}">
+<span class="tchip tc-{{c.type}}">{{c.type}}</span>
+<span class="ell grow" style="font-weight: 500;">{{c.name}}</span>
+<span class="dots"><sc-for list="{{c.dots}}" as="d" hint-placeholder-count="5"><span class="dot {{d.cls}}"></span></sc-for></span>
+<span class="dim" style="font-size: 11px; width: 52px; text-align: right;">{{c.activity}}</span>
+</button>
+<sc-if value="{{c.open}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{c.docs}}" as="d" hint-placeholder-count="4">
+<button class="docrow {{d.cls}}" sc-camel-on-click="{{d.open}}">
+<svg class="ic ty-{{d.tcls}}" sc-camel-view-box="0 0 24 24" width="17" height="17"><path d="{{I.file}}"></path></svg>
+<span class="lbl">{{d.t}}</span><span class="pill">{{d.ver}}</span>
+<span class="grow"></span>
+<sc-if value="{{d.hasHist}}" hint-placeholder-val="{{false}}"><span class="dim" style="font-size: 11px;">{{d.histLabel}}</span></sc-if>
+<sc-if value="{{d.unread}}" hint-placeholder-val="{{false}}"><span class="udot"></span></sc-if>
+</button>
+</sc-for>
+</sc-if>
+</div>
+</sc-for>
+</sc-if>
+<sc-if value="{{secFiles}}" hint-placeholder-val="{{false}}">
+<div class="mono dim" style="font-size: 11.5px; margin-bottom: 10px;">/home/you/code/…/<b style="color: var(--text); font-weight: 500;">wt-bug-login-timeout</b></div>
+<sc-for list="{{files}}" as="f" hint-placeholder-count="10">
+<button class="frow" sc-camel-on-click="{{f.click}}" style="padding-left: {{f.pad}}px;">
+<svg class="ic {{f.cls}}" sc-camel-view-box="0 0 24 24" width="17" height="17"><path d="{{f.icon}}"></path></svg>
+<span class="ell grow">{{f.name}}</span>
+<sc-if value="{{f.hasGit}}" hint-placeholder-val="{{false}}"><span class="mono" style="font-size: 11px; color: var(--accent);">{{f.git}}</span></sc-if>
+</button>
+</sc-for>
+</sc-if>
+<sc-if value="{{secHistory}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+<div class="srow"><span class="tchip tc-{{c.type}}">{{c.type}}</span><span class="grow ell">{{c.name}}</span><span class="dots"><sc-for list="{{c.dots}}" as="d" hint-placeholder-count="5"><span class="dot {{d.cls}}"></span></sc-for></span></div>
+</sc-for>
+<div class="srow"><span class="tchip tc-bug" style="opacity: .6;">bug</span><span class="grow ell dim">null-avatar · archived</span><button class="btn" style="height: 36px;" sc-camel-on-click="{{reopenMock}}">Reopen</button></div>
+<div class="warnbox" style="margin-top: 14px;">CLI session browser arrives in V2 — same rows as desktop, "Open in new tab" resumes the session.</div>
+</sc-if>
+<sc-if value="{{secSetups}}" hint-placeholder-val="{{false}}">
+<sc-for list="{{layouts}}" as="l" hint-placeholder-count="3">
+<div class="card" style="padding: 12px;">
+<div class="row" style="gap: 10px;"><span style="font-weight: 600;" class="grow">{{l.name}}</span><span class="dim" style="font-size: 12px;">{{l.countLabel}}</span></div>
+<div class="dim" style="font-size: 12.5px; margin: 4px 0 10px;">{{l.summary}}</div>
+<button class="btn wide" sc-camel-on-click="{{l.apply}}">Apply to login-timeout</button>
+</div>
+</sc-for>
+</sc-if>
+<sc-if value="{{secSettings}}" hint-placeholder-val="{{false}}">
+<div class="mlabel">Appearance</div>
+<div class="seg" style="margin-bottom: 8px;"><button class="{{darkCls}}" sc-camel-on-click="{{setDark}}">Dark</button><button class="{{lightCls}}" sc-camel-on-click="{{setLight}}">Light</button></div>
+<div class="mlabel">Buttons</div>
+<div class="srow"><span class="grow">Write sends immediately</span><button class="sw {{wFillCls}}" sc-camel-on-click="{{toggleFill}}" aria-pressed="{{writeFill}}" aria-label="Write sends immediately"></button></div>
+<div class="mlabel">Services</div>
+<div class="srow"><span class="glyph g-opencode">OC</span><span class="grow">OpenCode 1.4.2</span><span style="color: var(--green); font-size: 12px;">✓</span></div>
+<div class="srow"><span class="glyph g-codex">CX</span><span class="grow">Codex CLI 0.52.0</span><span style="color: var(--green); font-size: 12px;">✓</span></div>
+<div class="srow"><span class="glyph g-claude">CC</span><span class="grow">Claude Code 2.3.1</span><span style="color: var(--green); font-size: 12px;">✓</span></div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<!-- ===== BOTTOM SHEETS ===== -->
+<sc-if value="{{hasSheet}}" hint-placeholder-val="{{false}}">
+<button class="scrim" sc-camel-on-click="{{closeSheet}}" aria-label="Close sheet" tabindex="-1"></button>
+<div class="sheet" role="dialog" aria-label="{{sheetTitle}}">
+<div class="handle"></div>
+<div class="shead"><span class="stitle">{{sheetTitle}}</span><button class="tb" sc-camel-on-click="{{closeSheet}}" aria-label="Close"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.x}}"></path></svg></button></div>
+
+<sc-if value="{{shRead}}" hint-placeholder-val="{{false}}">
+<div class="sbody">
+<div class="dim" style="font-size: 12.5px; margin-bottom: 6px;">Stages only — nothing is sent from here.</div>
+<sc-for list="{{readRows}}" as="rr" hint-placeholder-count="3">
+<button class="lrow {{rr.cls}}" sc-camel-on-click="{{rr.toggle}}" aria-pressed="{{rr.on}}">
+<span class="check {{rr.chk}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="13" height="13" style="stroke-width: 3;"><path d="{{I.check}}"></path></svg></span>
+<svg class="ic ty-{{rr.tcls}}" sc-camel-view-box="0 0 24 24" width="17" height="17"><path d="{{I.file}}"></path></svg>
+<span class="grow">{{rr.t}}</span>
+<sc-if value="{{rr.unread}}" hint-placeholder-val="{{false}}"><span class="udot"></span></sc-if>
+<span class="pill">{{rr.ver}}</span>
+</button>
+</sc-for>
+<div class="mlabel">Will stage exactly</div>
+<div class="preview">{{readPreview}}</div>
+</div>
+<div class="sfoot"><button class="btn primary wide" sc-camel-on-click="{{stageRead}}" disabled="{{readNone}}">Stage in composer</button></div>
+</sc-if>
+
+<sc-if value="{{shWrite}}" hint-placeholder-val="{{false}}">
+<div class="sbody">
+<div class="mono dim" style="font-size: 11.5px; margin-bottom: 6px;">briefs/bug-login-timeout/</div>
+<sc-for list="{{writeRows}}" as="wr" hint-placeholder-count="5">
+<button class="lrow {{wr.cls}}" sc-camel-on-click="{{wr.pick}}" aria-pressed="{{wr.on}}">
+<span class="radio {{wr.radio}}"></span>
+<svg class="ic ty-{{wr.tcls}}" sc-camel-view-box="0 0 24 24" width="17" height="17"><path d="{{I.file}}"></path></svg>
+<span class="grow">{{wr.slug}}</span><span class="mono dim" style="font-size: 12px;">→ {{wr.next}}</span>
+</button>
+</sc-for>
+<div class="mlabel">Will send exactly</div>
+<div class="preview">{{writePreview}}</div>
+</div>
+<div class="sfoot"><button class="btn" sc-camel-on-click="{{stageWrite}}">Stage only</button><button class="btn primary grow" sc-camel-on-click="{{sendWrite}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="16" height="16"><path d="{{I.enter}}"></path></svg>Send now</button></div>
+</sc-if>
+
+<sc-if value="{{shNew}}" hint-placeholder-val="{{false}}">
+<div class="sbody">
+<div class="mlabel">Type</div>
+<div class="row" style="gap: 8px;"><sc-for list="{{ncTypes}}" as="nt" hint-placeholder-count="3"><button class="optcard {{nt.cls}}" sc-camel-on-click="{{nt.pick}}" aria-pressed="{{nt.on}}"><span class="cdot" style="background: {{nt.color}};"></span>{{nt.id}}</button></sc-for></div>
+<div class="mlabel"><label for="m-name">Name</label></div>
+<input id="m-name" type="text" style="width: 100%; height: 46px; padding: 0 12px; font-size: 15px;" placeholder="e.g. login timeout" value="{{ncName}}" sc-camel-on-change="{{setNcName}}">
+<sc-if value="{{ncErr}}" hint-placeholder-val="{{false}}"><div style="color: var(--red); font-size: 12.5px; margin-top: 6px;">Give the change a name.</div></sc-if>
+<div style="margin-top: 8px;"><span class="slug">briefs/{{ncSlug}}/</span></div>
+<div class="srow" style="margin-top: 6px;"><span class="grow">Worktree <span class="mono dim" style="font-size: 12px;">wt-{{ncSlug}}</span></span><button class="sw {{ncWtCls}}" sc-camel-on-click="{{toggleWt}}" aria-pressed="{{ncWt}}" aria-label="Worktree"></button></div>
+<div class="mlabel">Layout</div>
+<div class="seg"><sc-for list="{{ncLayouts}}" as="nl" hint-placeholder-count="4"><button class="{{nl.cls}}" sc-camel-on-click="{{nl.pick}}">{{nl.name}}</button></sc-for></div>
+<div class="dim" style="font-size: 12.5px; margin-top: 8px;">{{ncLayoutSummary}}</div>
+</div>
+<div class="sfoot"><button class="btn primary wide" sc-camel-on-click="{{createChange}}">Create change &amp; launch tabs</button></div>
+</sc-if>
+
+<sc-if value="{{shOverflow}}" hint-placeholder-val="{{false}}">
+<div class="sbody" style="padding-bottom: 22px;">
+<button class="menu-i" sc-camel-on-click="{{applyTriage}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.tiles}}"></path></svg><span class="grow">Layout ▸ triage</span><span class="dim" style="font-size: 12px;">apply</span></button>
+<button class="menu-i" sc-camel-on-click="{{addCli}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.term}}"></path></svg><span class="grow">Add CLI</span></button>
+<button class="menu-i" sc-camel-on-click="{{toggleTheme}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{themeIcon}}"></path></svg><span class="grow">{{themeLabel}}</span></button>
+<button class="menu-i" disabled="{{true}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.tiles}}"></path></svg><span class="grow">Tiled view</span><span class="dim" style="font-size: 12px;">desktop only</span></button>
+<button class="menu-i" sc-camel-on-click="{{archiveMock}}"><svg class="ic" sc-camel-view-box="0 0 24 24" width="20" height="20"><path d="{{I.archive}}"></path></svg><span class="grow">Archive change</span></button>
+</div>
+</sc-if>
+
+<sc-if value="{{shBadge}}" hint-placeholder-val="{{false}}">
+<div class="sbody" style="padding-bottom: 22px;">
+<sc-for list="{{attn}}" as="a" hint-placeholder-count="2">
+<button class="lrow" sc-camel-on-click="{{a.pick}}" style="min-height: 56px;"><span class="stc st-{{a.state}}"></span><span class="glyph {{a.gcls}}">{{a.glyph}}</span><span class="grow"><span style="display: block; font-weight: 500;">{{a.label}}</span><span class="dim" style="display: block; font-size: 12px;">{{a.reason}}</span></span><span style="color: var(--accent); font-size: 13px;">Jump</span></button>
+</sc-for>
+<sc-if value="{{noAttn}}" hint-placeholder-val="{{false}}"><div class="dim" style="text-align: center; padding: 24px;">All quiet.</div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{shChange}}" hint-placeholder-val="{{false}}">
+<div class="sbody" style="padding-bottom: 22px;">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+<button class="lrow {{c.selCls}}" sc-camel-on-click="{{c.select}}" style="min-height: 52px;"><span class="tchip tc-{{c.type}}">{{c.type}}</span><span class="grow ell" style="font-weight: 500;">{{c.name}}</span><span class="dots"><sc-for list="{{c.dots}}" as="d" hint-placeholder-count="5"><span class="dot {{d.cls}}"></span></sc-for></span></button>
+</sc-for>
+<button class="lrow" sc-camel-on-click="{{openNew}}" style="color: var(--accent); font-weight: 500;"><svg class="ic" sc-camel-view-box="0 0 24 24" width="18" height="18"><path d="{{I.plus}}"></path></svg>New change</button>
+</div>
+</sc-if>
+
+<sc-if value="{{shAppr}}" hint-placeholder-val="{{false}}">
+<div class="sbody">
+<div class="row" style="gap: 8px; margin-bottom: 10px;"><span class="glyph g-codex">CX</span><span style="font-weight: 500;">coder · codex · luna</span></div>
+<div class="preview" style="margin-bottom: 8px;">Bash — pnpm vitest run tests/auth/refresh-race.test.ts</div>
+</div>
+<div class="sfoot"><button class="btn" sc-camel-on-click="{{deny}}" style="color: var(--red);">Deny</button><button class="btn primary grow" sc-camel-on-click="{{approve}}">Approve once</button></div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{false}}"><div class="toast" role="status"><svg class="ic" sc-camel-view-box="0 0 24 24" width="17" height="17"><path d="{{I.check}}"></path></svg>{{toast}}</div></sc-if>
+</div>
+</x-dc>

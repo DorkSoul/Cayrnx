@@ -1,0 +1,3 @@
+#!/bin/sh
+# Fake claude for Cayrnx tests and dev (see ../fake-cli.mjs).
+exec node "$(dirname "$(readlink -f "$0")")/../fake-cli.mjs" --persona claude "$@"

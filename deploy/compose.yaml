@@ -1,0 +1,62 @@
+# Cayrnx with Docker Compose (plan §3.9).
+#
+#   docker compose -f deploy/compose.yaml up -d --build
+#   docker compose -f deploy/compose.yaml logs cayrnx   # first-run setup token
+#
+# Access paths (docs/deploy.md): LAN, a Pangolin tunnel (newt sidecar) or a Cloudflare tunnel
+# (cloudflared sidecar). Sidecars are opt-in profiles:
+#   docker compose -f deploy/compose.yaml --profile pangolin up -d
+#   docker compose -f deploy/compose.yaml --profile cloudflare up -d
+
+services:
+  cayrnx:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        CLAUDE_VERSION: "2.1.280"
+        CODEX_VERSION: "0.154.0"
+        OPENCODE_VERSION: "2.0.14"
+    image: cayrnx:local
+    restart: unless-stopped
+    environment:
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      # Optional API-key logins instead of the in-browser "Log in" tabs:
+      # ANTHROPIC_API_KEY: ...
+      # OPENAI_API_KEY: ...
+    volumes:
+      - cayrnx-data:/data
+      # Target projects. /projects is the default allowed folder.
+      - ${PROJECTS_DIR:-./projects}:/projects
+    ports:
+      # Localhost only by default. For LAN access use "0.0.0.0:4717:4717" (or a LAN IP) and add
+      # the LAN URL under Settings → Access & security → Allowed origins.
+      - "127.0.0.1:4717:4717"
+
+  # Pangolin: newt connects this host to your Pangolin server; point the resource at
+  # http://cayrnx:4717 and enable trustProxy in Cayrnx.
+  newt:
+    profiles: [pangolin]
+    image: fosrl/newt:latest
+    restart: unless-stopped
+    environment:
+      PANGOLIN_ENDPOINT: "${PANGOLIN_ENDPOINT:?set PANGOLIN_ENDPOINT}"
+      NEWT_ID: "${NEWT_ID:?set NEWT_ID}"
+      NEWT_SECRET: "${NEWT_SECRET:?set NEWT_SECRET}"
+    depends_on: [cayrnx]
+
+  # Cloudflare Tunnel: create the tunnel in the Zero Trust dashboard with the public hostname
+  # routed to http://cayrnx:4717; optionally add an Access application and fill in
+  # Settings → Access & security → Cloudflare Access.
+  cloudflared:
+    profiles: [cloudflare]
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN}"
+    depends_on: [cayrnx]
+
+volumes:
+  cayrnx-data:

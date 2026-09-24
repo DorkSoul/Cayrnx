@@ -1,0 +1,15 @@
+# Forgejo Actions: typecheck + unit/integration tests (fake CLIs, no real agents).
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: docker
+    container:
+      image: node:24-bookworm
+    steps:
+      - uses: actions/checkout@v4
+      - run: apt-get update && apt-get install -y --no-install-recommends python3 make g++ git
+      - run: corepack enable && pnpm install --frozen-lockfile
+      - run: pnpm -r typecheck
+      - run: git config --global user.email ci@example.invalid && git config --global user.name ci
+      - run: pnpm test
+      - run: pnpm build

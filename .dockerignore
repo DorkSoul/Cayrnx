@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+.dev
+**/dist
+apps/server/web
+.git
+test-results
+playwright-report
+CAYRNX_Design_mockup.html

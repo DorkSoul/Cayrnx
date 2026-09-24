@@ -1,0 +1,20 @@
+packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+# Keep every pnpm store/cache inside the repo (dev boundary: nothing outside the repo).
+storeDir: .dev/pnpm-store
+cacheDir: .dev/pnpm-cache
+autoInstallPeers: true
+strictPeerDependencies: false
+
+allowBuilds:
+  node-pty: true
+  esbuild: true
+  '@node-rs/argon2': true
+
+# One copy of each CodeMirror core package (two copies break its instanceof checks).
+overrides:
+  '@codemirror/state': 6.7.5
+  '@codemirror/view': 6.43.12

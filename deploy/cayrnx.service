@@ -1,0 +1,22 @@
+# systemd user unit for a VM install (plan §3.9):
+#   npm install -g cayrnx            # or: node /path/to/Cayrnx/apps/server/bin/cayrnx.js
+#   cp deploy/cayrnx.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now cayrnx
+#   loginctl enable-linger "$USER"   # keep it running while logged out
+# The CLIs use this user's normal home (~/.claude, ~/.codex, ~/.local/share/opencode).
+
+[Unit]
+Description=Cayrnx — coding-agent CLIs around markdown briefs
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=CAYRNX_HOST=127.0.0.1
+Environment=CAYRNX_PORT=4717
+ExecStart=/usr/bin/env cayrnx
+Restart=on-failure
+RestartSec=3
+KillMode=mixed
+
+[Install]
+WantedBy=default.target
