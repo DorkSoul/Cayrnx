@@ -71,7 +71,6 @@ export type Dialog =
   | { kind: 'open' }
   | { kind: 'import'; text?: string }
   | { kind: 'layout'; layout: Layout; isNew: boolean }
-  | { kind: 'approval'; tab: string }
   | { kind: 'install'; service: ServiceId }
   | { kind: 'bgtabs'; projectId: string }
   | { kind: 'confirm'; title: string; body: string; confirm: string; danger?: boolean; run: () => Promise<void> | void }
@@ -390,25 +389,6 @@ export function formatTokens(n: number | null | undefined): string {
   if (n < 1000) return String(n);
   if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k`;
   return `${(n / 1_000_000).toFixed(1)}M`;
-}
-
-export async function answerApproval(tabId: string, decision: 'once' | 'always' | 'deny' | 'terminal', scope: 'exact' | 'prefix' | 'all' = 'prefix'): Promise<void> {
-  try {
-    await post(`/api/tabs/${tabId}/approval`, { decision, scope });
-    set({ dialog: null });
-    toast(decision === 'deny' ? 'Denied' : decision === 'terminal' ? 'Answer it in the terminal' : decision === 'always' ? 'Always allowed' : 'Approved once', decision === 'deny' ? 'info' : 'ok');
-    if (decision === 'terminal') {
-      const t = S().tabs[tabId];
-      if (t) await jumpToTab(t);
-    }
-  } catch (e) {
-    errToast(e);
-  }
-}
-
-export function openApproval(t: TabStatus): void {
-  if (t.approval) openDialog({ kind: 'approval', tab: t.id });
-  else void jumpToTab(t);
 }
 
 export async function refreshProjects(): Promise<void> {

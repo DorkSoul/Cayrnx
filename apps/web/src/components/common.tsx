@@ -9,7 +9,7 @@ import { BRAND } from '../brandIcons.ts';
 export const STATE_TITLES: Record<TabChip | 'doc', string> = {
   idle: 'Idle',
   busy: 'Working…',
-  approval: 'Needs approval — click to review',
+  approval: 'Needs approval — answer it in the terminal',
   updated: 'Brief updated since this tab last read',
   error: 'Adapter failed — running as a plain terminal',
   finished: 'Finished — went idle since you last looked',

@@ -27,15 +27,6 @@ export interface LaunchOpts {
   skillsDir?: string | null;
 }
 
-/** Keys sent to the TUI when you answer a screen-detected approval (S13 without hooks). */
-export interface ApprovalKeys {
-  once: string;
-  always: string;
-  deny: string;
-  /** How the keys are shown in the dialog. */
-  labels: { once: string; always: string; deny: string };
-}
-
 export interface Choice {
   value: string;
   label: string;
@@ -99,7 +90,6 @@ export interface ServiceAdapter {
   authArgs: string[] | null;
   /** Human-readable launch template for Settings → Services. */
   template: string;
-  approvalKeys: ApprovalKeys;
   /** Version prefixes the argv was checked against; anything else gets a warning chip. */
   testedVersions: string[];
   /** What the hooks give you, for Settings → Services (null = no hook support yet). */

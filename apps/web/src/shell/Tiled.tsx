@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 
 import type { TabStatus } from '@cayrnx/shared';
 import { I, Icon } from '../icons.tsx';
 import { post } from '../api.ts';
-import { activeTabId, clearStaged, curChange, curKey, errToast, openApproval, relaunchTab, sendStaged, setActive, termTabsFor, togglePop, useStore, type TileSizes } from '../store.ts';
+import { activeTabId, clearStaged, curChange, curKey, errToast, relaunchTab, sendStaged, setActive, termTabsFor, togglePop, useStore, type TileSizes } from '../store.ts';
 import { Glyph, StateChip } from '../components/common.tsx';
 import { AREA_PRESETS } from '../panels/SetupsPanel.tsx';
 import { mountTerminal } from '../terminals.ts';
@@ -55,7 +55,7 @@ function Tile({ t, area, active, onSwap }: { t: TabStatus; area: string; active:
         <span className={cls('dim ell grow', t.tuned && 'tuned')} style={{ fontSize: 11 }} title={tunedNote(t) || undefined}>
           {tabMeta(t)}
         </span>
-        <StateChip chip={t.chip} onClick={t.chip === 'approval' ? () => openApproval(t) : undefined} />
+        <StateChip chip={t.chip} onClick={t.chip === 'approval' ? () => setActive(t.id) : undefined} />
         <button className="ibtn sm" onClick={() => focusTab(t.id, 'read')} disabled={!briefs} aria-label="Read" title="Read ▾ (stage)">
           <Icon d={I.read} size={14} />
         </button>

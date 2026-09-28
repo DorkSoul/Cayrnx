@@ -13,7 +13,6 @@ import {
   errToast,
   formatTokens,
   minimizeStaged,
-  openApproval,
   openDialog,
   relaunchTab,
   revertTuned,
@@ -86,7 +85,7 @@ export function TabStrip() {
               <span className="tab-role">{t.spec.role || t.spec.service}</span>
               <span className={cls('tab-meta', t.tuned && 'tuned')}>{tabMeta(t)}</span>
             </button>
-            <StateChip chip={t.chip} onClick={t.chip === 'approval' ? () => openApproval(t) : undefined} />
+            <StateChip chip={t.chip} onClick={t.chip === 'approval' ? () => setActive(t.id) : undefined} />
             <button className="tab-x" onClick={() => void closeTab(t.id)} aria-label="Close tab">
               <Icon d={I.x} size={12} />
             </button>
@@ -234,12 +233,6 @@ export function Toolbar({ tab }: { tab: TabStatus }) {
         </button>
       )}
       <div className="grow" />
-      {tab.approval && (
-        <button className="btn sm" style={{ borderColor: 'var(--blue)', color: 'var(--blue)' }} onClick={() => openApproval(tab)} data-testid="review-approval">
-          <Icon d={I.shield} size={13} />
-          Review approval
-        </button>
-      )}
       <span className="tok" title={`Tokens used by this tab's session${change ? ` · ${formatTokens(s.tokens[tab.projectId]?.changes[change.slug])} for the whole change` : ''}`}>
         tokens {formatTokens(s.tokens[tab.projectId]?.tabs[tab.id])}
       </span>

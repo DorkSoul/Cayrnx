@@ -65,7 +65,6 @@ export const opencodeAdapter: ServiceAdapter = {
   authArgs: ['auth', 'list'],
   template: "OPENCODE_CONFIG_CONTENT='{\"model\":\"<provider/model>[#variant]\",\"default_agent\":\"<agent>\"}' opencode <dir> --standalone [--auto]",
   // OpenCode's permission prompt: Enter = allow once, a = always, Esc = reject.
-  approvalKeys: { once: '\r', always: 'a', deny: '\x1b', labels: { once: 'Enter', always: 'a', deny: 'Esc' } },
   testedVersions: ['2.0.'],
   install: [{ label: 'Official installer', cmd: 'curl -fsSL https://opencode.ai/install | bash', note: 'Installs into ~/.opencode/bin.' }],
   hookNote: null,

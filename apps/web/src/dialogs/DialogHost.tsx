@@ -1,7 +1,6 @@
 import { useStore } from '../store.ts';
 import { AddCliDialog } from './AddCliDialog.tsx';
 import { BgTabsDialog } from './BgTabsDialog.tsx';
-import { ApprovalDialog } from './ApprovalDialog.tsx';
 import { InstallDialog } from './InstallDialog.tsx';
 import { NewChangeDialog } from './NewChangeDialog.tsx';
 import { OpenProjectDialog } from './OpenProjectDialog.tsx';
@@ -28,8 +27,6 @@ export function DialogHost() {
       return <ConfirmDialog d={d} />;
     case 'rename':
       return <RenameDialog d={d} />;
-    case 'approval':
-      return <ApprovalDialog tabId={d.tab} />;
     case 'install':
       return <InstallDialog service={d.service} />;
     case 'bgtabs':

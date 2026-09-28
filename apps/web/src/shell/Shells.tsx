@@ -13,7 +13,6 @@ import {
   formatTokens,
   loadTokens,
   minimizeStaged,
-  openApproval,
   openDialog,
   openPanel,
   setActive,
@@ -164,11 +163,6 @@ function MobileToolbar() {
       <IconBtn label={off ? 'Write — off for workspace tabs' : 'Write ▾ — sends'} onClick={() => togglePop('write')} className="tbtn write" disabled={off} testid="write-btn">
         <Icon d={I.write} size={20} />
       </IconBtn>
-      {tab.approval && (
-        <IconBtn label="Review approval" onClick={() => openApproval(tab)} className="tbtn" testid="review-approval">
-          <Icon d={I.shield} size={20} style={{ color: 'var(--blue)' }} />
-        </IconBtn>
-      )}
       {st && st.min && st.text && (
         <button className="chip" onClick={() => minimizeStaged(tab.id, false)} data-testid="staged-chip">
           <Icon d={I.pencil} size={14} />
@@ -201,7 +195,7 @@ function MobileTabs() {
   return (
     <div className="tabs" role="tablist">
       {terms.map((t) => (
-        <button key={t.id} className={cls('tab', t.id === active && 'on')} onClick={() => (t.chip === 'approval' ? openApproval(t) : setActive(t.id))} title={[tabLabel(t), tunedNote(t)].filter(Boolean).join('\n')} role="tab" aria-selected={t.id === active} data-testid={`tab-${t.spec.role || t.spec.service}`}>
+        <button key={t.id} className={cls('tab', t.id === active && 'on')} onClick={() => setActive(t.id)} title={[tabLabel(t), tunedNote(t)].filter(Boolean).join('\n')} role="tab" aria-selected={t.id === active} data-testid={`tab-${t.spec.role || t.spec.service}`}>
           <Glyph service={t.spec.service} plain={t.kind === 'plain'} />
           <StateChip chip={t.chip} />
           <span className="ell" style={{ fontSize: 13, fontWeight: 500 }}>

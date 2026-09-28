@@ -20,8 +20,8 @@ function common(o: LaunchOpts): string[] {
 }
 
 /**
- * Claude Code hooks → Cayrnx (plan §5 V2): precise busy/idle and approvals answered from the web
- * UI. Merged on top of the user's own settings by `--settings`.
+ * Claude Code hooks → Cayrnx (plan §5 V2): precise busy/idle and "needs approval" status (you
+ * answer in the terminal). Merged on top of the user's own settings by `--settings`.
  */
 export function claudeHookSettings(hook: string[]) {
   const command = hook.map(shq).join(' ');
@@ -31,9 +31,11 @@ export function claudeHookSettings(hook: string[]) {
       SessionStart: [{ hooks: h() }],
       UserPromptSubmit: [{ hooks: h() }],
       PreToolUse: [{ matcher: '*', hooks: h() }],
+      // A tool ran (or failed): any permission prompt for it was answered in the terminal.
+      PostToolUse: [{ matcher: '*', hooks: h() }],
+      PostToolUseFailure: [{ matcher: '*', hooks: h() }],
       Stop: [{ hooks: h() }],
       Notification: [{ hooks: h() }],
-      PermissionRequest: [{ matcher: '*', hooks: h(600) }],
     },
   };
 }
@@ -91,11 +93,10 @@ export const claudeAdapter: ServiceAdapter = {
   authArgs: ['auth', 'status'],
   template: 'claude [--session-id <uuid>] [--model <model>] [--effort <effort>] [--agent <agent>] --permission-mode <mode> --add-dir <target>/briefs [--settings <hooks json>]   (cwd = change dir)',
   // Claude's permission prompt lists numbered options: 1 Yes · 2 Yes, don't ask again · 3 No.
-  approvalKeys: { once: '1', always: '2', deny: '3', labels: { once: '1', always: '2', deny: '3' } },
   testedVersions: ['2.1.'],
   install: [
     { label: 'Official installer', cmd: 'curl -fsSL https://claude.ai/install.sh | bash', note: 'Native build into ~/.local/bin; keeps itself up to date.' },
     { label: 'npm (global)', cmd: 'npm install -g @anthropic-ai/claude-code', note: "Needs Node; installs into npm's global prefix (may need sudo if that's /usr)." },
   ],
-  hookNote: 'Hooks (SessionStart, UserPromptSubmit, PreToolUse, Stop, Notification, PermissionRequest) report status and let you answer approvals here. Passed with --settings; merged with your own settings.',
+  hookNote: 'Hooks (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop, Notification) report status, including when a permission prompt is waiting in the terminal. Passed with --settings; merged with your own settings.',
 };

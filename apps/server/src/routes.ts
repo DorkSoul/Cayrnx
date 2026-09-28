@@ -525,13 +525,6 @@ export function registerRoutes(app: FastifyInstance, core: Core): void {
     return { ok: true };
   });
 
-  // S13: answer a pending approval (hook decision, or keystrokes for a screen-detected prompt).
-  app.post('/api/tabs/:tab/approval', async (req) => {
-    const b = parse(z.object({ decision: z.enum(['once', 'always', 'deny', 'terminal']), scope: z.enum(['exact', 'prefix', 'all']).default('prefix') }), req.body);
-    core.tabs.answerApproval((req.params as any).tab, b.decision, b.scope);
-    return { ok: true };
-  });
-
   // CLI hook relay (Claude hooks, Codex notify) — token + loopback checked in app.ts.
   app.post('/api/hook/:tab/:token', async (req) => {
     const { tab, token } = req.params as any;

@@ -30,21 +30,36 @@ describe('claude hooks', () => {
     box.control({ mode: 'write', delayMs: 400 });
     t = await launch('claude', 'planner');
     expect(t.command).toContain('--settings');
-    expect(t.command).toContain('PermissionRequest');
+    expect(t.command).toContain('Notification');
+    expect(t.command).not.toContain('PermissionRequest'); // approvals are answered in the terminal
     await until(async () => (await tab(t.id)).hooked, 10000);
   });
 
-  it('answers a PermissionRequest from Cayrnx (always allow, prefix rule)', async () => {
-    box.control({ mode: 'approval', delayMs: 400 });
+  // Claude's Notification hook says a prompt is waiting; you answer it in the terminal, and the
+  // "needs approval" status clears on its own.
+  it('shows a pending approval, cleared when answered in the terminal (deny with Esc)', async () => {
+    box.control({ mode: 'approval', delayMs: 300 });
     await sleep(300);
     await srv.api('POST', `/api/tabs/${t.id}/send`, { text: 'run the tests' });
     const a = await until(async () => (await tab(t.id)).approval, 10000);
-    expect(a).toMatchObject({ source: 'hook', tool: 'Bash', detail: 'pnpm vitest run' });
+    expect(a.source).toBe('hook');
     expect((await tab(t.id)).chip).toBe('approval');
-    const r = await srv.api('POST', `/api/tabs/${t.id}/approval`, { decision: 'always', scope: 'prefix' });
-    expect(r.status).toBe(200);
-    const d = await until(() => box.log().find((l) => l.kind === 'hook-decision')?.data, 10000);
-    expect(d).toMatchObject({ behavior: 'allow', updatedPermissions: [{ type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'pnpm vitest:*' }], destination: 'session' }] });
+    await sleep(600); // the prompt is on screen for a tick
+    srv.core.tabs.input(t.id, '\x1b');
+    await until(() => box.log().some((l) => l.kind === 'approval-key' && l.data === 'deny'), 10000);
+    await until(async () => {
+      const x = await tab(t.id);
+      return !x.approval && x.chip !== 'approval' ? x : null;
+    }, 10000);
+  });
+
+  it('an approval answered in the terminal (approve) clears, and the turn finishes', async () => {
+    box.control({ mode: 'approval', delayMs: 300 });
+    await srv.api('POST', `/api/tabs/${t.id}/send`, { text: 'run them again' });
+    await until(async () => (await tab(t.id)).approval, 10000);
+    await sleep(600);
+    srv.core.tabs.input(t.id, '1');
+    await until(async () => ((await tab(t.id)).approval ? null : true), 10000);
     const done = await until(async () => {
       const x = await tab(t.id);
       return x.finished ? x : null;
@@ -72,7 +87,7 @@ describe('claude hooks', () => {
 
 describe('codex: screen approvals, notify, sessions', () => {
   let t: TabStatus;
-  it('detects the approval on screen and answers with keystrokes', async () => {
+  it('detects the approval on screen; answering in the terminal clears it', async () => {
     box.control({ mode: 'approval', delayMs: 300 });
     t = await launch('codex', 'coder');
     expect(t.command).toContain('notify=');
@@ -82,8 +97,9 @@ describe('codex: screen approvals, notify, sessions', () => {
     const a = await until(async () => (await tab(t.id)).approval, 10000);
     expect(a.source).toBe('screen');
     expect(a.detail).toContain('Allow command?');
-    await srv.api('POST', `/api/tabs/${t.id}/approval`, { decision: 'once' });
+    srv.core.tabs.input(t.id, 'y');
     await until(() => box.log().some((l) => l.kind === 'approval-key' && l.data === 'once'), 10000);
+    await until(async () => ((await tab(t.id)).approval ? null : true), 10000);
     // notify marks the turn finished and the session id is captured from the store.
     const x = await until(async () => {
       const y = await tab(t.id);

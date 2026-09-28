@@ -9,7 +9,7 @@
 //
 // V2 plumbing it also exercises:
 // - claude: `--settings {"hooks":…}` → runs the hook commands (SessionStart, UserPromptSubmit,
-//   PreToolUse, Stop, PermissionRequest) with JSON on stdin, like Claude Code does.
+//   PreToolUse, PostToolUse, Stop, Notification) with JSON on stdin, like Claude Code does.
 // - codex: `-c notify=[…]` → runs the notify program with a JSON argument after each turn.
 // - transcripts in each CLI's store layout, but only under $FAKE_CLI_HOME (never the real home).
 
@@ -274,6 +274,12 @@ function runTui() {
     pendingApproval = true;
   }
 
+  /** Like a real TUI, the answered prompt disappears from the screen. */
+  function eraseTuiApproval() {
+    out(`\x1b[${APPROVAL.lines.length}A\r\x1b[J`);
+    pendingApproval = null;
+  }
+
   function submit(text) {
     log('submit', text);
     const sw = text.trim().match(/^\/(model|effort)\s+(\S+)(?:\s+(\S+))?$/);
@@ -299,29 +305,9 @@ function runTui() {
       process.exit(Number(ctl.code || 0));
     }
     if (ctl.mode === 'approval' && !m) {
-      if (hooks) {
-        busy = true;
-        out(acc('● Bash(pnpm vitest run)') + dim('  — asking via PermissionRequest hook') + '\r\n');
-        void runHook(hooks, 'PermissionRequest', { session_id: sessionId, tool_name: 'Bash', tool_input: { command: 'pnpm vitest run', description: 'Run tests' } }).then((o) => {
-          busy = false;
-          let d = null;
-          try {
-            d = JSON.parse(o).hookSpecificOutput?.decision;
-          } catch {
-            /* no decision */
-          }
-          log('hook-decision', d);
-          if (!d) return showTuiApproval();
-          if (d.behavior === 'allow') {
-            out(green(`✓ Approved via hook${d.updatedPermissions ? ' (always: ' + JSON.stringify(d.updatedPermissions[0].rules[0]) + ')' : ''}`) + '\r\n');
-            work('Running tests', delay, () => out(green('  ✓ 3 tests passed')));
-          } else {
-            out(red('✗ Denied via hook') + '\r\n');
-            prompt();
-          }
-        });
-        return;
-      }
+      // Like Claude Code: the prompt is in the terminal, and the Notification hook says one is waiting.
+      out(acc('● Bash(pnpm vitest run)') + '\r\n');
+      if (hooks) void runHook(hooks, 'Notification', { session_id: sessionId, message: 'Claude needs your permission to use Bash' });
       showTuiApproval();
       return;
     }
@@ -369,11 +355,15 @@ function runTui() {
       const k = chunk;
       const hit = k === APPROVAL.once ? 'once' : k === APPROVAL.always ? 'always' : APPROVAL.deny.includes(k) ? 'deny' : null;
       if (hit) {
-        pendingApproval = null;
+        eraseTuiApproval();
         log('approval-key', hit);
         out((hit === 'deny' ? red('✗ Denied') : green(hit === 'always' ? '✓ Approved (always)' : '✓ Approved')) + '\r\n');
         if (hit === 'deny') prompt();
-        else work('Running tests', 500, () => out(green('  ✓ 3 tests passed')));
+        else
+          work('Running tests', 500, () => {
+            out(green('  ✓ 3 tests passed'));
+            if (hooks) void runHook(hooks, 'PostToolUse', { session_id: sessionId, tool_name: 'Bash', tool_input: { command: 'pnpm vitest run' } });
+          });
       }
       return;
     }

@@ -51,8 +51,8 @@ that you (or a fresh agent session) can open later.
   its tabs launch at once. Edit it, or build your own in *Setups → Layouts*.
 - **Progress at a glance.** Each change shows a dot for its brief and one for each CLI tab,
   lit once that tab has run. A board view sorts changes into columns based on which docs exist.
-- **Approvals.** Permission prompts from any tab show up as a badge and can be answered from a
-  dialog, including on your phone.
+- **Approvals.** A tab waiting on a permission prompt shows it in its status and in the
+  attention badge; clicking takes you to that terminal, where you answer it in the CLI.
 - **Token breakdown.** Tokens per tab and per change. Click the total for a per-model table
   (input, output, reasoning, cache read, cache write, and cost where the CLI reports it), read
   from each CLI's own session store.
@@ -135,9 +135,9 @@ in *Settings → Briefs* and *Setups → Doc types*.
   dialog uses the same code for its preview, so the command you see is exactly what the server
   runs. If a CLI rejects its flags, the tab falls back to a plain terminal.
 - **Status and approvals:** Claude Code gets `--settings` hooks (Stop, UserPromptSubmit,
-  PermissionRequest), and approvals go back through the hook. Codex uses `notify`. For
-  OpenCode, and as a fallback, prompts are detected on screen and answered with the CLI's own
-  keys.
+  PreToolUse, PostToolUse, Notification), which report busy/idle and a waiting permission
+  prompt. Codex uses `notify`. For OpenCode, and as a fallback, prompts are detected on screen.
+  Either way you answer them in the terminal.
 - **Session tracking** reads each CLI's own store (read-only). That covers Claude transcripts in
   `~/.claude/projects`, Codex rollouts in `~/.codex/sessions` and OpenCode's SQLite database. It
   gives tokens, models, and whether a model or effort was switched inside the CLI.
@@ -347,7 +347,7 @@ These are covered by `apps/server/test/server.test.ts`.
 Cayrnx is a working single-user app in daily use. It isn't a hosted service and has no
 multi-user accounts.
 
-- Codex and OpenCode approvals are detected on screen. Only Claude Code has a structured hook.
+- Codex and OpenCode approvals are detected on screen. Only Claude Code reports them through a hook.
 - In-CLI model/effort switches are followed for Claude Code and Codex, not OpenCode yet.
 - A managed `opencode serve` (event stream instead of screen detection) isn't built.
 - The Docker image is defined but hasn't been through a full release build yet.

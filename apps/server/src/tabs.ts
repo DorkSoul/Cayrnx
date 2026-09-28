@@ -59,9 +59,6 @@ export interface TabCtx {
   skillsDir?: string | null;
 }
 
-export type ApprovalDecision = 'once' | 'always' | 'deny' | 'terminal';
-export type ApprovalScope = 'exact' | 'prefix' | 'all';
-
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;?]*[ -\/]*[@-~]|\x1b\][^\x07]*\x07|\x1b[()][0-9A-Za-z]/g, '');
 /** Output that means the CLI rejected the flags Cayrnx built (→ ⚡ plain-terminal fallback). */
 const FLAG_ERROR = /unknown (option|argument|flag|command)|unexpected argument|unrecognized (option|argument)|invalid (option|value|argument)|error: unexpected|unknown arguments?:/i;
@@ -108,8 +105,9 @@ class Tab {
   hookState: Activity | null = null;
   hookToken = crypto.randomBytes(18).toString('base64url');
   approval: ApprovalInfo | null = null;
-  approvalRespond: ((body: object) => void) | null = null;
-  approvalCtx: { tool?: string; input?: any } = {};
+  /** A hook-reported approval's prompt was seen in the terminal; when it goes away it was answered there. */
+  approvalSeen = false;
+  approvalGoneSince = 0;
   busySince = 0;
   outBuf = '';
   lastCodexScan = 0;
@@ -127,8 +125,6 @@ class Tab {
   idleSince = 0;
   /** A Read added to the prompt: its docs count as read once Enter submits it. */
   pendingRead: string | null = null;
-  /** After answering a screen prompt, ignore that prompt's text still in the scrollback. */
-  approvalFloor = { y: -1, until: 0 };
   sinks = new Set<Sink>();
   attaching = new Map<Sink, string[]>();
   lastJson = '';
@@ -532,11 +528,14 @@ export class TabManager extends EventEmitter {
     this.emitStatus(t);
   }
 
-  private clearApproval(t: Tab, body: object = {}): void {
-    const r = t.approvalRespond;
-    t.approvalRespond = null;
+  private setApproval(t: Tab, ap: ApprovalInfo): void {
+    t.approval = ap;
+    t.approvalSeen = false;
+    t.approvalGoneSince = 0;
+  }
+
+  private clearApproval(t: Tab): void {
     t.approval = null;
-    if (r) r(body);
   }
 
   private fail(t: Tab, msg: string): void {
@@ -924,11 +923,17 @@ export class TabManager extends EventEmitter {
         this.markRan(t);
       // falls through
       case 'PreToolUse':
-      case 'PostToolUse':
         t.hookState = 'busy';
-        if (t.approval?.source === 'hook' && !t.approvalRespond) t.approval = null;
+        if (t.approval?.source === 'hook') t.approval = null;
+        break;
+      case 'PostToolUse':
+      case 'PostToolUseFailure':
+        // The tool ran, so its prompt was answered — here or in the terminal. Release the hook.
+        t.hookState = 'busy';
+        this.clearApproval(t);
         break;
       case 'Stop':
+        this.clearApproval(t);
         t.hookState = 'idle';
         if (was !== 'idle') t.finished = true;
         this.markRan(t);
@@ -948,63 +953,14 @@ export class TabManager extends EventEmitter {
         const msg = String(payload.message || '');
         if (/permission/i.test(msg)) {
           t.hookState = 'approval';
-          if (!t.approval) t.approval = { id: crypto.randomBytes(6).toString('hex'), source: 'hook', tool: null, detail: msg, at: Date.now() };
+          if (!t.approval) this.setApproval(t, { id: crypto.randomBytes(6).toString('hex'), source: 'hook', tool: null, detail: msg, at: Date.now() });
         } else if (/waiting for (your )?input/i.test(msg)) t.hookState = 'idle';
         break;
       }
-      case 'PermissionRequest': {
-        this.clearApproval(t);
-        t.hookState = 'approval';
-        t.approval = { id: crypto.randomBytes(6).toString('hex'), source: 'hook', tool: payload.tool_name || null, detail: describeToolInput(payload.tool_name, payload.tool_input), at: Date.now() };
-        const input = payload.tool_input;
-        const tool = payload.tool_name;
-        const p = new Promise<object>((resolve) => {
-          const timer = setTimeout(() => resolve({}), 590_000);
-          timer.unref();
-          t.approvalRespond = (body) => {
-            clearTimeout(timer);
-            resolve(body);
-          };
-        });
-        t.approvalCtx = { tool, input };
-        t.activity = 'approval';
-        this.emitStatus(t);
-        return p;
-      }
     }
-    if (t.approvalRespond) t.activity = 'approval';
-    else if (t.hookState) t.activity = t.hookState === 'approval' && !t.approval ? 'idle' : t.hookState;
+    if (t.hookState) t.activity = t.hookState === 'approval' && !t.approval ? 'idle' : t.hookState;
     this.emitStatus(t);
     return Promise.resolve({});
-  }
-
-  /** Answer a pending approval from the S13 dialog. */
-  answerApproval(id: string, decision: ApprovalDecision, scope: ApprovalScope = 'prefix'): void {
-    const t = this.tab(id);
-    const ap = t.approval;
-    if (!ap) throw new HttpError(409, 'Nothing is waiting for approval', 'no_approval');
-    if (ap.source === 'hook' && t.approvalRespond) {
-      const ctx = t.approvalCtx;
-      let decisionBody: any = null;
-      if (decision === 'once') decisionBody = { behavior: 'allow' };
-      else if (decision === 'deny') decisionBody = { behavior: 'deny', message: 'Denied in Cayrnx.' };
-      else if (decision === 'always') decisionBody = { behavior: 'allow', updatedPermissions: [{ type: 'addRules', rules: [permissionRule(ctx.tool, ctx.input, scope)], behavior: 'allow', destination: 'session' }] };
-      // 'terminal': no decision → the CLI shows its own prompt in the terminal.
-      this.clearApproval(t, decisionBody ? { hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: decisionBody } } : {});
-      t.hookState = decision === 'terminal' ? 'approval' : decision === 'deny' ? 'idle' : 'busy';
-      if (decision === 'terminal') t.approval = { ...ap, source: 'screen' };
-    } else if (decision !== 'terminal') {
-      const keys = t.rec.kind === 'term' ? ADAPTERS[t.rec.spec.service].approvalKeys : null;
-      if (!keys || !t.pty) throw new HttpError(409, 'Answer this one in the terminal');
-      t.pty.write(keys[decision]);
-      t.lastInput = Date.now();
-      t.approval = null;
-      const b = t.term.buffer.active;
-      t.approvalFloor = { y: b.baseY + b.cursorY, until: Date.now() + 8000 };
-      t.activity = decision === 'deny' ? 'idle' : 'busy';
-      if (t.hookState === 'approval') t.hookState = decision === 'deny' ? 'idle' : 'busy';
-    }
-    this.emitStatus(t);
   }
 
   ackUpdated(id: string): void {
@@ -1060,12 +1016,12 @@ export class TabManager extends EventEmitter {
 
   /* ---------------- activity heuristics ---------------- */
 
-  private screenTail(t: Tab, n: number, floor = -1): string {
+  private screenTail(t: Tab, n: number): string {
     const b = t.term.buffer.active;
     // The lines ending at the cursor: on a mostly empty screen the prompt is near the top.
     const end = Math.min(b.baseY + b.cursorY + 1, b.length);
     const out: string[] = [];
-    for (let y = Math.max(0, end - n, floor + 1); y < end; y++) {
+    for (let y = Math.max(0, end - n); y < end; y++) {
       const line = b.getLine(y);
       if (line) out.push(line.translateToString(true));
     }
@@ -1082,19 +1038,30 @@ export class TabManager extends EventEmitter {
       if (t.proc !== 'running' || !t.pty) continue;
       const pat = t.rec.kind === 'term' ? ADAPTERS[t.rec.spec.service].activity : PLAIN_ACTIVITY;
       const screen = this.screenTail(t, 14);
-      const floor = t.approvalFloor.until > now && t.term.buffer.active.type === 'normal' ? t.approvalFloor.y : -1;
-      const apScreen = floor >= 0 ? this.screenTail(t, 14, floor) : screen;
-      const onScreen = !t.fallback && pat.approval.some((r) => r.test(apScreen));
+      const onScreen = !t.fallback && pat.approval.some((r) => r.test(screen));
+      // Claude reports a permission prompt (Notification hook) but not your answer: once the
+      // prompt has left the screen after you typed, it was answered (or cancelled) there.
+      if (t.approval?.source === 'hook') {
+        if (onScreen) {
+          t.approvalSeen = true;
+          t.approvalGoneSince = 0;
+        } else if (t.approvalSeen && t.lastInput > t.approval.at) {
+          t.approvalGoneSince ||= now;
+          if (now - t.approvalGoneSince >= 1000) {
+            this.clearApproval(t);
+            if (t.hookState === 'approval') t.hookState = null; // busy or idle: the screen tells
+          }
+        }
+      }
       let act: Activity;
-      if (t.approval?.source === 'hook' && t.approvalRespond) act = 'approval';
-      else if (onScreen) {
+      if (onScreen) {
         act = 'approval';
         if (!t.approval) t.approval = { id: crypto.randomBytes(6).toString('hex'), source: 'screen', tool: null, detail: screen.replace(/\n{3,}/g, '\n\n').trim().slice(-1200), at: now };
       } else if (t.hooked && t.hookState) act = t.hookState === 'approval' && !t.approval ? 'idle' : t.hookState;
       else if (now - t.lastOutput < pat.idleMs && t.lastOutput > t.lastInput + 250) act = 'busy';
       else if (pat.busy.some((r) => r.test(screen))) act = 'busy';
       else act = 'idle';
-      if (act !== 'approval' && t.approval && !t.approvalRespond) t.approval = null;
+      if (act !== 'approval' && t.approval) t.approval = null;
       if (act === 'approval' && t.hookState === 'approval' && !t.approval) act = 'idle';
       // Heuristic "finished": a real stretch of work ended (hooks report it precisely instead).
       if (act === 'busy' && t.activity !== 'busy') t.busySince = now;
@@ -1185,27 +1152,4 @@ export function childEnv(src: NodeJS.ProcessEnv): Record<string, string> {
     env[k] = v;
   }
   return env;
-}
-
-function describeToolInput(tool: string | undefined, input: any): string {
-  if (!input || typeof input !== 'object') return String(input ?? '');
-  if (typeof input.command === 'string') return input.command;
-  if (typeof input.file_path === 'string') return input.file_path + (typeof input.old_string === 'string' ? ' (edit)' : '');
-  if (typeof input.url === 'string') return input.url;
-  const j = JSON.stringify(input);
-  return (tool ? `${tool} ` : '') + (j.length > 600 ? j.slice(0, 600) + '…' : j);
-}
-
-/** Claude permission rule for "Always allow…" scopes: exact command, command prefix, whole tool. */
-export function permissionRule(tool: string | undefined, input: any, scope: ApprovalScope): { toolName: string; ruleContent?: string } {
-  const toolName = tool || 'Bash';
-  if (scope === 'all') return { toolName };
-  const cmd = typeof input?.command === 'string' ? input.command.trim() : null;
-  if (cmd) {
-    if (scope === 'exact') return { toolName, ruleContent: cmd };
-    const words = cmd.split(/\s+/).slice(0, 2).join(' ');
-    return { toolName, ruleContent: `${words}:*` };
-  }
-  const file = typeof input?.file_path === 'string' ? input.file_path : null;
-  return file && scope === 'exact' ? { toolName, ruleContent: file } : { toolName };
 }

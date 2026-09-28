@@ -73,34 +73,42 @@ test.describe.serial('V2 / V3', () => {
     await page.getByRole('button', { name: 'Terminals' }).click();
   });
 
-  test('approval via Claude hook: review, always allow (prefix)', async ({ page }) => {
+  // Approvals are answered in the CLI itself; Cayrnx only shows that one is waiting.
+  test('approval via Claude hook: shown on the tab, answered in the terminal', async ({ page }) => {
     await signIn(page);
     await pickChange(page, 'login-timeout');
     control({ mode: 'approval', delayMs: 400 });
     await addTab(page, 'claude', 'hooked');
     await sendText(page, 'run the tests');
     await expect(page.getByTestId('tab-hooked').locator('.st-approval')).toBeVisible();
-    await page.getByTestId('review-approval').click();
-    await expect(page.getByTestId('appr-detail')).toHaveText('pnpm vitest run');
+    await expect(page.getByTestId('review-approval')).toHaveCount(0);
     await shot(page, 'v2-approval-hook');
-    await page.getByTestId('appr-always').click();
-    await page.getByTestId('appr-always').click(); // confirm with the default "prefix" scope
-    await expect.poll(() => log().find((l) => l.kind === 'hook-decision')?.data?.updatedPermissions?.[0]?.rules?.[0]?.ruleContent).toBe('pnpm vitest:*');
+    const keys = () => log().filter((l) => l.kind === 'approval-key').length;
+    const before = keys();
+    await page.locator('.xthost').first().click();
+    await page.keyboard.press('1');
+    await expect.poll(keys).toBe(before + 1);
     await expect(page.getByTestId('tab-hooked').locator('.st-approval')).toHaveCount(0);
   });
 
-  test('approval detected on screen (codex): approve once sends the key', async ({ page }) => {
+  test('approval detected on screen (codex): the badge list jumps to the terminal', async ({ page }) => {
     await signIn(page);
     await pickChange(page, 'login-timeout');
     control({ mode: 'approval', delayMs: 400 });
     await addTab(page, 'codex', 'screener');
     await sendText(page, 'run the tests');
+    await expect(page.getByTestId('tab-screener').locator('.st-approval')).toBeVisible();
+    await page.getByTestId('tab-hooked').locator('.tab-main').click();
     await page.getByTestId('badge-cluster').click();
     await page.locator('.rpop-row', { hasText: 'screener' }).click();
-    await expect(page.getByTestId('appr-detail')).toContainText('Allow command?');
-    await expect(page.locator('.dialog')).toContainText('once y');
-    await page.getByTestId('appr-once').click();
-    await expect.poll(() => log().some((l) => l.kind === 'approval-key' && l.data === 'once')).toBe(true);
+    await expect(page.getByTestId('tab-screener')).toHaveClass(/\bon\b/);
+    await expect(page.locator('.dialog')).toHaveCount(0);
+    const keys = () => log().filter((l) => l.kind === 'approval-key').length;
+    const before = keys();
+    await page.locator('.xthost').first().click();
+    await page.keyboard.press('y');
+    await expect.poll(keys).toBe(before + 1);
+    await expect(page.getByTestId('tab-screener').locator('.st-approval')).toHaveCount(0);
     control({ mode: 'write', delayMs: 500 });
   });
 

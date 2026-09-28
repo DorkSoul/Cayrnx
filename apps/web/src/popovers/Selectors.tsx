@@ -7,7 +7,6 @@ import {
   curChange,
   curKey,
   jumpToTab,
-  openApproval,
   openDialog,
   selectChange,
   selectProject,
@@ -176,7 +175,7 @@ export function BadgeList() {
   const { approvals, updates, finished } = attentionTabs(s.tabs);
   const pname = (id: string) => (s.projects.length > 1 ? `${s.projects.find((p) => p.id === id)?.name || id} · ` : '');
   const row = (t: TabStatus, reason: string) => (
-    <button key={t.id} className="rpop-row" onClick={() => (t.chip === 'approval' ? openApproval(t) : void jumpToTab(t))} style={{ height: 40 }}>
+    <button key={t.id} className="rpop-row" onClick={() => void jumpToTab(t)} style={{ height: 40 }}>
       <Glyph service={t.spec.service} plain={t.kind === 'plain'} />
       <span className="grow" style={{ minWidth: 0 }}>
         <span className="ell" style={{ display: 'block', fontWeight: 500 }}>
