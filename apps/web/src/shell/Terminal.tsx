@@ -3,7 +3,7 @@ import { ADAPTERS, type TabStatus } from '@cayrnx/shared';
 import { I, Icon } from '../icons.tsx';
 import { post } from '../api.ts';
 import { clearStaged, editStaged, errToast, minimizeStaged, openDialog, relaunchTab, sendStaged, useStore } from '../store.ts';
-import { mountTerminal } from '../terminals.ts';
+import { mountTerminal, sendKey, type SoftKey } from '../terminals.ts';
 import { cls } from '../util.ts';
 
 export function tabLabel(t: TabStatus): string {
@@ -52,6 +52,7 @@ export function TerminalView({ tab }: { tab: TabStatus }) {
   const mobile = useStore((s) => s.isMobile);
   const strip = useStore((s) => s.settings?.buttons.stagedPlacement === 'toolbar' && !s.isMobile);
   const hasComposer = !!staged && !!staged.text && !staged.min && !strip;
+  const keys = mobile && !hasComposer && tab.proc === 'running';
   useEffect(() => {
     if (!host.current) return;
     return mountTerminal(tab.id, host.current, { focus: !mobile && !hasComposer });
@@ -61,9 +62,10 @@ export function TerminalView({ tab }: { tab: TabStatus }) {
   const dismiss = (what: 'notsaved') => void post(`/api/tabs/${tab.id}/ack`, { what }).catch(errToast);
   return (
     <>
-      <div className={cls('xtwrap', hasComposer && 'withcomp')}>
+      <div className={cls('xtwrap', hasComposer && 'withcomp', keys && 'withkeys')}>
         <div className="xthost" ref={host} data-testid={`term-${tab.id}`} />
       </div>
+      {keys && <KeyRow tab={tab.id} />}
       {conn !== 'open' && (
         <div className="conn">
           <span className="stc st-launching" />
@@ -139,6 +141,58 @@ export function TerminalView({ tab }: { tab: TabStatus }) {
       )}
       {hasComposer && <Composer tab={tab} />}
     </>
+  );
+}
+
+const KEYS: [SoftKey, string, string][] = [
+  ['esc', 'Esc', 'Escape'],
+  ['left', '←', 'Left arrow'],
+  ['up', '↑', 'Up arrow'],
+  ['down', '↓', 'Down arrow'],
+  ['right', '→', 'Right arrow'],
+  ['space', 'Space', 'Space'],
+  ['enter', 'Enter', 'Enter'],
+];
+
+/** Phone keyboards lack these keys; interactive CLIs need them. Arrows repeat while held. */
+function KeyRow({ tab }: { tab: string }) {
+  const timer = useRef<number | null>(null);
+  const stop = () => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = null;
+  };
+  useEffect(() => stop, []);
+  const press = (k: SoftKey) => {
+    sendKey(tab, k);
+    if (k === 'esc' || k === 'enter' || k === 'space') return;
+    const again = (ms: number) => (timer.current = window.setTimeout(() => (sendKey(tab, k), again(70)), ms));
+    again(400);
+  };
+  return (
+    <div className="keyrow" role="toolbar" aria-label="Terminal keys" data-testid="keyrow">
+      {KEYS.map(([k, label, name]) => (
+        <button
+          key={k}
+          className={cls('softkey', label.length > 1 && 'word')}
+          aria-label={name}
+          data-testid={`key-${k}`}
+          // Keep focus (and the on-screen keyboard) on the terminal.
+          onMouseDown={(e) => e.preventDefault()}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            stop();
+            press(k);
+          }}
+          onPointerUp={stop}
+          onPointerLeave={stop}
+          onPointerCancel={stop}
+          onClick={(e) => e.detail === 0 && sendKey(tab, k)}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
 

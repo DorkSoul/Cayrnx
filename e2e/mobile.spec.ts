@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import path from 'node:path';
-import { signIn } from './helpers.ts';
+import fs from 'node:fs';
+import { ROOT, signIn } from './helpers.ts';
 
 // Spec §15 mock list (a)–(e) at 390×844.
 test('mobile shell: overlays, sheets, composer, overflow', async ({ page }) => {
@@ -86,4 +87,62 @@ test('install app: offered in the browser, hidden in the installed app', async (
   await expect(page.locator('#set-about')).toBeVisible();
   await expect(group).toHaveCount(0);
   await expect(page.locator('.anchor', { hasText: 'Install app' })).toHaveCount(0);
+});
+
+/** Raw input chunks the fake CLIs read from their PTY. */
+function inputs(): string[] {
+  const f = path.join(ROOT, 'fake-cli.log');
+  if (!fs.existsSync(f)) return [];
+  return fs.readFileSync(f, 'utf8').trim().split('\n').map((l) => JSON.parse(l)).filter((l) => l.kind === 'input').map((l) => l.data);
+}
+
+// Phone keyboards lack arrows, Esc and a plain Enter: a key row under the terminal sends them,
+// and dragging on the terminal scrolls it.
+test('key row sends keys; dragging scrolls the terminal', async ({ page }) => {
+  await signIn(page);
+  await page.getByTestId('change-selector').click();
+  await page.locator('.sheet .rpop-row', { hasText: 'login-timeout' }).click();
+  await page.getByTestId('tab-planner').click();
+  // Earlier suites stop the idle CLIs; the row is only there while the CLI runs.
+  const relaunch = page.locator('.overlay-center').getByRole('button', { name: 'Relaunch' });
+  if (await relaunch.isVisible()) await relaunch.click();
+  const row = page.getByTestId('keyrow');
+  await expect(row.locator('button')).toHaveCount(7);
+  // It sits under the terminal, not over it, and fits a 390px phone.
+  const r = (await row.boundingBox())!;
+  const host = (await page.locator('.xthost').first().boundingBox())!;
+  expect(host.y + host.height).toBeLessThanOrEqual(r.y + 0.5);
+  expect(r.width).toBeLessThanOrEqual(390);
+  await page.waitForTimeout(1500); // let the fake CLI boot
+  if (process.env.E2E_SHOTS) await page.screenshot({ path: path.join(process.env.E2E_SHOTS, `mobile-keyrow-${test.info().project.name}.png`) });
+
+  // Enough empty prompts to push the banner into scrollback.
+  for (let i = 0; i < 40; i++) await page.getByTestId('key-enter').click();
+  const before = inputs().length;
+  for (const k of ['up', 'down', 'left', 'right', 'space', 'esc']) await page.getByTestId(`key-${k}`).click();
+  await expect.poll(() => inputs().slice(before).join('')).toBe('\x1b[A\x1b[B\x1b[D\x1b[C \x1b');
+  // Tapping a key doesn't take focus from the terminal (that would close the phone keyboard).
+  await page.locator('.xthost').first().click();
+  await page.getByTestId('key-up').click();
+  expect(await page.evaluate(() => document.activeElement?.classList.contains('xterm-helper-textarea'))).toBe(true);
+
+  // Drag down on the terminal → back through the scrollback.
+  const slider = page.locator('.xthost .scrollbar.vertical .slider').first();
+  const top = async () => (await slider.boundingBox())?.y ?? -1;
+  const atBottom = await top();
+  await page.locator('.xthost .xterm-screen').first().evaluate((el) => {
+    const b = el.getBoundingClientRect();
+    const x = b.left + b.width / 2;
+    // WebKit won't construct Touch objects from script: an event carrying the touch points will do.
+    const fire = (type: string, y: number) => {
+      const ev = new Event(type, { bubbles: true, cancelable: true });
+      const pt = [{ identifier: 1, target: el, clientX: x, clientY: y }];
+      Object.defineProperties(ev, { touches: { value: type === 'touchend' ? [] : pt }, changedTouches: { value: pt } });
+      el.dispatchEvent(ev);
+    };
+    fire('touchstart', b.top + 40);
+    for (let y = 60; y <= 300; y += 20) fire('touchmove', b.top + y);
+    fire('touchend', b.top + 300);
+  });
+  await expect.poll(top).toBeLessThan(atBottom - 5);
 });

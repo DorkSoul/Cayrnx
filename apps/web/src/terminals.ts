@@ -316,7 +316,9 @@ export function mountTerminal(tab: string, container: HTMLElement, opts: { focus
   e.el.addEventListener('mousedown', reclaim);
   e.el.addEventListener('touchstart', reclaim, { passive: true });
   e.term.textarea?.addEventListener('focus', reclaim);
+  const unTouch = touchScroll(e);
   return () => {
+    unTouch();
     ro.disconnect();
     if (t) window.clearTimeout(t);
     e.el.removeEventListener('mousedown', reclaim);
@@ -327,6 +329,71 @@ export function mountTerminal(tab: string, container: HTMLElement, opts: { focus
     if (e.el.parentElement === container) container.removeChild(e.el);
     e.lastUsed = Date.now();
   };
+}
+
+/**
+ * Drag to scroll on a touchscreen. Scrollback scrolls with the finger; a full-screen CLI (mouse
+ * tracking or the alternate screen) gets wheel events instead, which xterm turns into what a
+ * mouse wheel would send there. A tap still focuses the terminal and opens the keyboard.
+ */
+function touchScroll(e: Entry): () => void {
+  let y = 0;
+  let acc = 0;
+  let dragging = false;
+  const cellH = () => (e.el.querySelector('.xterm-screen')?.clientHeight || 0) / e.term.rows || 16;
+  const start = (ev: TouchEvent) => {
+    dragging = false;
+    acc = 0;
+    if (ev.touches.length === 1) y = ev.touches[0].clientY;
+  };
+  const move = (ev: TouchEvent) => {
+    if (ev.touches.length !== 1) return;
+    const t = ev.touches[0];
+    const dy = y - t.clientY; // finger up → later lines
+    if (!dragging && Math.abs(dy) < 8) return;
+    dragging = true;
+    ev.preventDefault();
+    ev.stopPropagation();
+    y = t.clientY;
+    const term = e.term;
+    if (term.modes.mouseTrackingMode !== 'none' || term.buffer.active.type === 'alternate') {
+      const target = ev.target instanceof Element ? ev.target : e.el;
+      target.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, deltaMode: WheelEvent.DOM_DELTA_PIXEL, clientX: t.clientX, clientY: t.clientY, bubbles: true, cancelable: true }));
+      return;
+    }
+    acc += dy / cellH();
+    const lines = Math.trunc(acc);
+    if (lines) {
+      term.scrollLines(lines);
+      acc -= lines;
+    }
+  };
+  const end = (ev: TouchEvent) => {
+    // A drag isn't a tap: don't let it place the cursor or open the keyboard.
+    if (dragging) ev.preventDefault();
+    dragging = false;
+  };
+  e.el.addEventListener('touchstart', start, { passive: true, capture: true });
+  e.el.addEventListener('touchmove', move, { passive: false, capture: true });
+  e.el.addEventListener('touchend', end, { passive: false, capture: true });
+  return () => {
+    e.el.removeEventListener('touchstart', start, { capture: true });
+    e.el.removeEventListener('touchmove', move, { capture: true });
+    e.el.removeEventListener('touchend', end, { capture: true });
+  };
+}
+
+/** Keys phone keyboards lack (the mobile key row). */
+export type SoftKey = 'up' | 'down' | 'left' | 'right' | 'enter' | 'space' | 'esc';
+
+/** Type a key into a tab's CLI as if pressed, honouring the CLI's cursor-key mode. */
+export function sendKey(tab: string, key: SoftKey): void {
+  const e = cache.get(tab);
+  if (!e) return;
+  const arrow = { up: 'A', down: 'B', right: 'C', left: 'D' } as Record<string, string>;
+  const data = arrow[key] ? (e.term.modes.applicationCursorKeysMode ? '\x1bO' : '\x1b[') + arrow[key] : key === 'enter' ? '\r' : key === 'space' ? ' ' : '\x1b';
+  if (e.opened && e.el.isConnected) socket.send({ t: 'focus', tab, ...proposed(e) });
+  e.term.input(data, true); // → onData, and scrolls back to the prompt like typing does
 }
 
 export function focusTerminal(tab: string): void {
