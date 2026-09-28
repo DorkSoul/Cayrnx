@@ -334,17 +334,25 @@ export function mountTerminal(tab: string, container: HTMLElement, opts: { focus
 /**
  * Drag to scroll on a touchscreen. Scrollback scrolls with the finger; a full-screen CLI (mouse
  * tracking or the alternate screen) gets wheel events instead, which xterm turns into what a
- * mouse wheel would send there. A tap still focuses the terminal and opens the keyboard.
+ * mouse wheel would send there. Only a tap on the CLI's input (the rows around its cursor) opens
+ * the phone keyboard; a drag, or a tap on the output, leaves it closed (and a tap closes it).
  */
+/** Rows either side of the cursor that count as the CLI's input: its prompt line and box borders. */
+const INPUT_ROWS = 2;
+
 function touchScroll(e: Entry): () => void {
   let y = 0;
   let acc = 0;
   let dragging = false;
   const cellH = () => (e.el.querySelector('.xterm-screen')?.clientHeight || 0) / e.term.rows || 16;
+  // With inputmode=none the terminal can take focus (xterm focuses on any press) without a
+  // phone keyboard; hardware keys still type.
+  const ta = e.term.textarea;
   const start = (ev: TouchEvent) => {
     dragging = false;
     acc = 0;
     if (ev.touches.length === 1) y = ev.touches[0].clientY;
+    if (ta && document.activeElement !== ta) ta.inputMode = 'none';
   };
   const move = (ev: TouchEvent) => {
     if (ev.touches.length !== 1) return;
@@ -368,9 +376,24 @@ function touchScroll(e: Entry): () => void {
       acc -= lines;
     }
   };
+  const inInput = (clientY: number) => {
+    const screen = e.el.querySelector('.xterm-screen');
+    if (!screen) return false;
+    const row = Math.floor((clientY - screen.getBoundingClientRect().top) / cellH());
+    const b = e.term.buffer.active;
+    return Math.abs(row - (b.baseY + b.cursorY - b.viewportY)) <= INPUT_ROWS;
+  };
   const end = (ev: TouchEvent) => {
     // A drag isn't a tap: don't let it place the cursor or open the keyboard.
     if (dragging) ev.preventDefault();
+    else if (ta && ev.touches.length === 0 && ev.changedTouches.length === 1) {
+      const want = inInput(ev.changedTouches[0].clientY);
+      const focused = document.activeElement === ta;
+      ta.inputMode = want ? 'text' : 'none';
+      // Re-focusing is what brings a keyboard back (or takes it away) on an already focused field.
+      if (focused) ta.blur();
+      if (want) e.term.focus();
+    }
     dragging = false;
   };
   e.el.addEventListener('touchstart', start, { passive: true, capture: true });

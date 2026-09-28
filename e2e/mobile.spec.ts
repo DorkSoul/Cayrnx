@@ -126,6 +126,24 @@ test('key row sends keys; dragging scrolls the terminal', async ({ page }) => {
   await page.getByTestId('key-up').click();
   expect(await page.evaluate(() => document.activeElement?.classList.contains('xterm-helper-textarea'))).toBe(true);
 
+  // Touch: only a tap on the CLI's input (by its cursor, here the bottom row) opens the phone
+  // keyboard; a tap on the output closes it.
+  const tap = (at: 'top' | 'bottom') =>
+    page.locator('.xthost .xterm-screen').first().evaluate((el, at) => {
+      const b = el.getBoundingClientRect();
+      const pt = [{ identifier: 2, target: el, clientX: b.left + b.width / 2, clientY: at === 'top' ? b.top + 4 : b.bottom - 4 }];
+      for (const type of ['touchstart', 'touchend']) {
+        const ev = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperties(ev, { touches: { value: type === 'touchend' ? [] : pt }, changedTouches: { value: pt } });
+        el.dispatchEvent(ev);
+      }
+      const ta = document.querySelector<HTMLTextAreaElement>('.xthost .xterm-helper-textarea')!;
+      return { focused: document.activeElement === ta, mode: ta.inputMode };
+    }, at);
+  expect(await tap('top')).toEqual({ focused: false, mode: 'none' });
+  expect(await tap('bottom')).toEqual({ focused: true, mode: 'text' });
+  expect(await tap('top')).toEqual({ focused: false, mode: 'none' });
+
   // Drag down on the terminal → back through the scrollback.
   const slider = page.locator('.xthost .scrollbar.vertical .slider').first();
   const top = async () => (await slider.boundingBox())?.y ?? -1;
