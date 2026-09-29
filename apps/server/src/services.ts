@@ -56,6 +56,7 @@ function run(cmd: string, args: string[], opts: { timeout?: number; cwd?: string
 }
 
 const detectCache = new Map<string, { at: number; value: ServiceDetect }>();
+const lastVersion = new Map<string, string | null>();
 
 /** Settings → Services readout. `withAuth` runs the CLI's own auth-status command (Test button). */
 export async function detect(id: ServiceId, s: Settings, withAuth = false, force = false): Promise<ServiceDetect> {
@@ -81,10 +82,19 @@ export async function detect(id: ServiceId, s: Settings, withAuth = false, force
     } else value.auth = a.authArgs ? `press Test to run \`${id} ${a.authArgs.join(' ')}\`` : '';
   }
   detectCache.set(key, { at: Date.now(), value });
+  // A new CLI version can bring new models: drop the cached lists so the next picker reloads them.
+  const seen = `${id}:${bin}`;
+  if (lastVersion.has(seen) && lastVersion.get(seen) !== value.version) clearModelCache(id);
+  lastVersion.set(seen, value.version);
   return value;
 }
 
 const listCache = new Map<string, { at: number; value: any[] }>();
+
+/** Forget the cached model/agent lists (of one CLI, or all) so they are read afresh. */
+export function clearModelCache(id?: ServiceId): void {
+  for (const k of [...listCache.keys()]) if (!id || k.startsWith(`models:${id}`) || k.startsWith(`agents:${id}`)) listCache.delete(k);
+}
 
 /** Cache a list for `ttl`; an empty result isn't cached (the CLI may still be loading). */
 async function cached<T>(key: string, ttl: number, fn: () => Promise<T[]>): Promise<T[]> {
@@ -109,9 +119,54 @@ function readJson(file: string): any {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Claude: the built-in aliases plus the extra models this account offers in `/model`. */
-function claudeModels(): ModelOption[] {
-  const out = [...ADAPTERS.claude.modelHints];
+const claudeScan = new Map<string, { key: string; ids: string[] }>();
+
+/**
+ * Claude has no model-list command, but its binary carries every model id it knows, so the ids
+ * are read out of it (cached until the binary changes). Undated `claude-<family>-<major>[-<minor>]`
+ * ids only; the dated aliases of the same model are dropped.
+ */
+async function scanClaudeBinary(bin: string): Promise<string[]> {
+  const file = fs.realpathSync(bin);
+  const st = fs.statSync(file);
+  const key = `${st.size}:${st.mtimeMs}`;
+  const hit = claudeScan.get(file);
+  if (hit?.key === key) return hit.ids;
+  const re = /claude-(?:opus|sonnet|haiku)-\d(?:-\d{1,2})?(?![\d-]*\d)/g;
+  const found = new Set<string>();
+  let tail = '';
+  for await (const chunk of fs.createReadStream(file, { encoding: 'latin1', highWaterMark: 4 * 1024 * 1024 })) {
+    const text = tail + chunk;
+    for (const m of text.matchAll(re)) found.add(m[0]);
+    tail = text.slice(-48);
+  }
+  const ids = [...found];
+  claudeScan.set(file, { key, ids });
+  return ids;
+}
+
+const claudeLabel = (id: string) => {
+  const m = /^claude-(\w+)-(\d)(?:-(\d+))?$/.exec(id)!;
+  return `${m[1][0].toUpperCase()}${m[1].slice(1)} ${m[2]}${m[3] ? '.' + m[3] : ''}`;
+};
+
+/** Claude: the built-in aliases, the versions the installed CLI knows, and this account's extras from `/model`. */
+async function claudeModels(bin: string): Promise<ModelOption[]> {
+  const hints = ADAPTERS.claude.modelHints;
+  const aliases = hints.filter((o) => o.group !== 'Pinned versions');
+  let pinned = hints.filter((o) => o.group === 'Pinned versions');
+  const p = which(bin);
+  const ids = await (p ? scanClaudeBinary(p) : Promise.resolve([])).catch(() => [] as string[]);
+  // Only 4.x and later; the cutoff keeps long-retired models out of the picker.
+  const ver = (id: string) => id.match(/-(\d)(?:-(\d+))?$/)!.slice(1).map((n) => Number(n || 0));
+  const fresh = ids.filter((id) => ver(id)[0] >= 4 && !id.endsWith('-0'));
+  if (fresh.length) {
+    const known = new Map(hints.map((o) => [o.id, o]));
+    pinned = fresh
+      .sort((a, b) => ver(b)[0] - ver(a)[0] || ver(b)[1] - ver(a)[1] || a.localeCompare(b))
+      .map((id) => known.get(id) || { id, label: claudeLabel(id), description: 'Pinned version', group: 'Pinned versions', efforts: /haiku/.test(id) ? [] : ADAPTERS.claude.efforts.map((e) => e.value) });
+  }
+  const out = [...aliases, ...pinned];
   const cfgDir = process.env.CLAUDE_CONFIG_DIR;
   const cfg = readJson(cfgDir ? path.join(cfgDir, '.claude.json') : path.join(os.homedir(), '.claude.json'));
   const extra = Array.isArray(cfg?.additionalModelOptionsCache) ? cfg.additionalModelOptionsCache : [];
@@ -173,7 +228,7 @@ async function opencodeModels(bin: string): Promise<ModelOption[]> {
 
 /** S10 model picker: each CLI's own catalog, falling back to the adapter's built-in list. */
 export function listModels(id: ServiceId, s: Settings): Promise<ModelOption[]> {
-  if (id === 'claude') return cached('models:claude', 60_000, async () => claudeModels());
+  if (id === 'claude') return cached(`models:claude:${s.services.claude.bin}`, 60_000, () => claudeModels(s.services.claude.bin));
   if (id === 'codex') return cached('models:codex', 60_000, async () => codexModels());
   return cached(`models:${id}:${s.services[id].bin}`, 5 * 60_000, async () => {
     const p = which(s.services[id].bin);

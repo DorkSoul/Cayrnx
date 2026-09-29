@@ -156,7 +156,7 @@
 .mx .xtwrap.withcomp{padding-bottom:170px}
 /* Key row: keys phone keyboards lack. Rides above the on-screen keyboard where it overlays the page (iOS). */
 .mx .xtwrap.withkeys{bottom:46px}
-.mx .xthost{touch-action:none}
+.mx .xthost{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .mx .keyrow{position:absolute;left:0;right:0;bottom:var(--kb, 0px);height:46px;display:flex;gap:4px;padding:4px 6px 6px;background:var(--panel);border-top:1px solid var(--line);z-index:4}
 .mx .softkey{flex:1 1 0;min-width:0;height:36px;border-radius:7px;background:var(--raised);border:1px solid var(--line2);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:17px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .mx .softkey.word{font-size:12px;flex-grow:1.3}

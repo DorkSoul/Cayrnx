@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ADAPTERS, DEFAULT_READ_TEMPLATE, DEFAULT_WRITE_TEMPLATE, SERVICE_IDS, TERM_FONTS, docGuide, readMsg, writeMsg, type ProjectSummary, type ServiceDetect, type ServiceId, type SessionInfo, type Settings, type SkillsInfo } from '@cayrnx/shared';
+import { ADAPTERS, DEFAULT_READ_TEMPLATE, DEFAULT_WRITE_TEMPLATE, SERVICE_IDS, TERM_FONTS, docGuide, readMsg, writeMsg, type ProjectSummary, type ServiceDetect, type ServiceId, type SessionInfo, type Settings, type SkillsInfo, type TabStatus } from '@cayrnx/shared';
 import { I, Icon } from '../icons.tsx';
 import { del, get, patch, post, put } from '../api.ts';
 import { curProject, errToast, logout, openDialog, refreshProjects, saveSettings, setActive, toast, togglePop, useStore } from '../store.ts';
@@ -155,6 +155,17 @@ function ServiceRow({ id, st, det, onDet }: { id: ServiceId; st: Settings; det?:
       errToast(e);
     }
   };
+  const update = async () => {
+    if (!project) return;
+    try {
+      const t = await post<TabStatus>(`/api/services/${id}/update`, { projectId: project.id });
+      useStore.setState((s) => ({ tabs: { ...s.tabs, [t.id]: t }, current: { ...s.current, [project.id]: 'workspace' }, view: 'term' }));
+      setActive(t.id);
+      toast(`Updating ${a.name} in a terminal tab — press Test when it's done to pick up the new version and models`, 'info');
+    } catch (e) {
+      errToast(e);
+    }
+  };
   return (
     <div className="svcrow" data-testid={`svc-${id}`}>
       <div className="row" style={{ gap: 8 }}>
@@ -181,6 +192,12 @@ function ServiceRow({ id, st, det, onDet }: { id: ServiceId; st: Settings; det?:
         <button className="btn sm" onClick={() => void test()}>
           Test
         </button>
+        {det?.path && !useStore.getState().meta?.docker && (
+          <button className="btn sm" onClick={() => void update()} disabled={!project} title={project ? `Runs \`${a.update}\` in a terminal tab; Test afterwards refreshes the version and model list` : 'Open a project first'} data-testid={`update-${id}`}>
+            <Icon d={I.download} size={13} />
+            Update
+          </button>
+        )}
         {det && !det.path && !useStore.getState().meta?.docker ? (
           <button className="btn sm primary" onClick={() => openDialog({ kind: 'install', service: id })} data-testid={`install-${id}`}>
             <Icon d={I.download} size={13} />

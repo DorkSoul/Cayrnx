@@ -221,6 +221,14 @@ describe('projects', () => {
       sock.ws.close();
     });
 
+    it('opens a blank shell tab in the change folder', async () => {
+      const r = await srv.api('POST', '/api/tabs/shell', { projectId: pid, change: 'bug-login-timeout' });
+      expect(r.status).toBe(200);
+      expect(r.body).toMatchObject({ kind: 'plain', change: 'bug-login-timeout' });
+      await until(async () => (await srv.api('GET', '/api/tabs')).body.find((t: TabStatus) => t.id === r.body.id)?.proc === 'running');
+      await srv.api('DELETE', `/api/tabs/${r.body.id}`);
+    });
+
     it('rejects a stale Write (race) with the next version', async () => {
       const r = await srv.api('POST', `/api/tabs/${tab.id}/write`, { type: 'findings', expectN: 2 });
       expect(r.status).toBe(409);

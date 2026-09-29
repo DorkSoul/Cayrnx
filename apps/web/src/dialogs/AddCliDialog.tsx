@@ -96,6 +96,21 @@ export function AddCliDialog({ editTab }: { editTab?: string }) {
       setBusy(false);
     }
   };
+  const blank = async () => {
+    setBusy(true);
+    try {
+      const key = curKey(s);
+      const t = await post<TabStatus>('/api/tabs/shell', { projectId: p.id, change: change && key !== WORKSPACE ? change.slug : null });
+      useStore.setState((st) => ({ tabs: { ...st.tabs, [t.id]: t } }));
+      setActive(t.id);
+      toast('Blank terminal opened', 'ok');
+      closeDialog();
+    } catch (e) {
+      errToast(e);
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <Dialog
       title={editing ? 'Edit launch settings' : 'Add CLI'}
@@ -111,6 +126,12 @@ export function AddCliDialog({ editTab }: { editTab?: string }) {
           <span className="grow dim ell" style={{ fontSize: 12 }}>
             {testMsg}
           </span>
+          {!editing && (
+            <button className="btn" onClick={() => void blank()} disabled={busy} title="A plain shell in this folder, for installing, updating or anything else you'd ssh in for" data-testid="blank-terminal">
+              <Icon d={I.play} size={14} />
+              Blank terminal
+            </button>
+          )}
           <button className="btn" onClick={() => void test()}>
             <Icon d={I.play} size={14} />
             Test launch

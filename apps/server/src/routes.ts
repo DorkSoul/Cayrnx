@@ -8,6 +8,7 @@ import {
   ADAPTERS,
   CAYRNX_VERSION,
   SERVICE_IDS,
+  shq,
   docKey,
   launchTabSchema,
   newChangeSchema,
@@ -29,7 +30,7 @@ import { HttpError, guardPath, underAny } from './util/paths.ts';
 import { createChange, deleteChange, deleteLatest, getChange, prune, readDoc, removeWorktree, saveDoc, scanChanges, updateMeta } from './briefs.ts';
 import { browseFolders, listTree, readTextFile } from './files.ts';
 import { git, gitChanges, gitFileDiff } from './util/git.ts';
-import { detect, listAgents, listModels } from './services.ts';
+import { clearModelCache, detect, listAgents, listModels } from './services.ts';
 import { codexHome, listSessions, resumeCommand, sessionTokens } from './sessions.ts';
 import { bundledSkills } from './core.ts';
 import { addUsage, emptyUsage, sessionUsage, usageTotal, type SessionUsage } from './usage.ts';
@@ -175,7 +176,32 @@ export function registerRoutes(app: FastifyInstance, core: Core): void {
     const dir = path.join(codexHome(), 'skills');
     return { bundled: bundledSkills(), names, codex: { dir, installed: names.filter((n) => fs.existsSync(path.join(dir, n, 'SKILL.md'))) } };
   });
-  app.post('/api/services/:svc/test', async (req) => detect(parse(serviceIdSchema, (req.params as any).svc), S(), true, true));
+  app.post('/api/services/:svc/test', async (req) => {
+    const id = parse(serviceIdSchema, (req.params as any).svc);
+    clearModelCache(id); // Test doubles as "check for new models"
+    return detect(id, S(), true, true);
+  });
+
+  // Update an installed CLI: runs the adapter's update command in a plain terminal tab so you
+  // watch it, like install. Press Test afterwards to pick up the new version and its models.
+  app.post('/api/services/:svc/update', async (req) => {
+    const id = parse(serviceIdSchema, (req.params as any).svc) as ServiceId;
+    const b = parse(z.object({ projectId: z.string() }), req.body);
+    if (core.docker) throw new HttpError(400, 'In Docker the CLIs are part of the image — set its version build arg and rebuild.');
+    const p = core.projects.get(b.projectId);
+    const bin = S().services[id].bin;
+    // Use the configured binary for CLIs that update themselves.
+    const cmd = ADAPTERS[id].update.replace(new RegExp(`^${id}\\b`), shq(bin));
+    const script = `${cmd}\nrc=$?\necho\nif [ $rc -eq 0 ]; then echo "✓ Done. In Cayrnx: Settings → Services → ${ADAPTERS[id].name} → Test."; else echo "✗ The update exited with $rc — fix it here (this is a normal shell), then Test in Settings."; fi\nexec "\${SHELL:-/bin/bash}" -l`;
+    return core.tabs.launch({
+      projectId: p.id,
+      change: null,
+      kind: 'plain',
+      spec: { service: id, role: `update ${id}`, model: '', effort: '', agent: '' },
+      plainArgv: ['/bin/bash', '-lc', script],
+      cwd: p.path,
+    });
+  });
 
   // Install a missing CLI (VM installs): runs the adapter's official command, verbatim, in a
   // plain terminal tab so you watch it; the tab drops into a shell afterwards.
@@ -457,6 +483,19 @@ export function registerRoutes(app: FastifyInstance, core: Core): void {
     const p = core.projects.get(b.projectId);
     const cwd = b.cwd ? guardPath(b.cwd, fileRoots(p), 'Working dir') : undefined;
     return core.tabs.launch({ projectId: p.id, change: b.change, spec: b.spec, cwd, resume: b.resume });
+  });
+
+  // A blank shell tab (login shell in the change's folder), so nobody has to ssh in.
+  app.post('/api/tabs/shell', async (req) => {
+    const b = parse(z.object({ projectId: z.string(), change: z.string().nullable().default(null) }), req.body);
+    const p = core.projects.get(b.projectId);
+    return core.tabs.launch({
+      projectId: p.id,
+      change: b.change,
+      kind: 'plain',
+      spec: { service: 'claude', role: 'terminal', model: '', effort: '', agent: '' },
+      plainArgv: [process.env.SHELL || '/bin/bash', '-l'],
+    });
   });
 
   app.post('/api/tabs/reorder', async (req) => {

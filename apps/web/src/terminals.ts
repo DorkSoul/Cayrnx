@@ -300,6 +300,11 @@ export function mountTerminal(tab: string, container: HTMLElement, opts: { focus
     e.webgl = null; // DOM renderer fallback
   }
   const sendFocus = () => socket.send({ t: 'focus', tab, ...proposed(e) });
+  // A phone only gets its keyboard from a tap on the CLI's input (see touchScroll), never from focus alone.
+  if (current.mobile && e.term.textarea) {
+    e.term.textarea.inputMode = 'none';
+    e.term.textarea.blur();
+  }
   requestAnimationFrame(() => {
     sendFocus();
     e.term.refresh(0, e.term.rows - 1);
@@ -308,7 +313,8 @@ export function mountTerminal(tab: string, container: HTMLElement, opts: { focus
   let t: number | null = null;
   const ro = new ResizeObserver(() => {
     if (t) window.clearTimeout(t);
-    t = window.setTimeout(() => socket.send({ t: 'resize', tab, ...proposed(e) }), 80);
+    // Longer on a phone: the keyboard opening resizes the view, and each PTY resize makes the CLI repaint.
+    t = window.setTimeout(() => socket.send({ t: 'resize', tab, ...proposed(e) }), current.mobile ? 250 : 80);
   });
   ro.observe(container);
   // The last-focused client sets the PTY size (plan §3.3): interacting reclaims it.
@@ -316,8 +322,23 @@ export function mountTerminal(tab: string, container: HTMLElement, opts: { focus
   e.el.addEventListener('mousedown', reclaim);
   e.el.addEventListener('touchstart', reclaim, { passive: true });
   e.term.textarea?.addEventListener('focus', reclaim);
+  // The PTY has one size, set by the last client that focused it. When this browser comes back
+  // (another device was used meanwhile) take it back, or the terminal stays at that device's size.
+  const wake = () => {
+    if (document.visibilityState === 'visible' && e.el.isConnected) sendFocus();
+  };
+  const tookOver = () => {
+    const d = proposed(e);
+    if (d.cols !== e.term.cols || d.rows !== e.term.rows) sendFocus();
+  };
+  window.addEventListener('focus', wake);
+  document.addEventListener('visibilitychange', wake);
+  e.el.addEventListener('mouseenter', tookOver);
   const unTouch = touchScroll(e);
   return () => {
+    window.removeEventListener('focus', wake);
+    document.removeEventListener('visibilitychange', wake);
+    e.el.removeEventListener('mouseenter', tookOver);
     unTouch();
     ro.disconnect();
     if (t) window.clearTimeout(t);
@@ -344,21 +365,63 @@ function touchScroll(e: Entry): () => void {
   let y = 0;
   let acc = 0;
   let dragging = false;
+  let pressTimer: number | null = null;
+  let anchor: { col: number; row: number } | null = null; // long-press selection start (buffer coords)
   const cellH = () => (e.el.querySelector('.xterm-screen')?.clientHeight || 0) / e.term.rows || 16;
+  const cellAt = (x: number, cy: number) => {
+    const r = e.el.querySelector('.xterm-screen')?.getBoundingClientRect();
+    if (!r) return null;
+    const col = Math.min(e.term.cols - 1, Math.max(0, Math.floor((x - r.left) / (r.width / e.term.cols))));
+    const row = Math.min(e.term.rows - 1, Math.max(0, Math.floor((cy - r.top) / cellH())));
+    return { col, row: e.term.buffer.active.viewportY + row };
+  };
+  const selectTo = (to: { col: number; row: number }) => {
+    if (!anchor) return;
+    const [a, b] = anchor.row < to.row || (anchor.row === to.row && anchor.col <= to.col) ? [anchor, to] : [to, anchor];
+    e.term.select(a.col, a.row, (b.row - a.row) * e.term.cols + (b.col - a.col) + 1);
+  };
+  const cancelPress = () => {
+    if (pressTimer) window.clearTimeout(pressTimer);
+    pressTimer = null;
+  };
   // With inputmode=none the terminal can take focus (xterm focuses on any press) without a
   // phone keyboard; hardware keys still type.
   const ta = e.term.textarea;
+  let sx = 0;
   const start = (ev: TouchEvent) => {
     dragging = false;
+    anchor = null;
     acc = 0;
-    if (ev.touches.length === 1) y = ev.touches[0].clientY;
+    cancelPress();
+    if (ev.touches.length === 1) {
+      const t = ev.touches[0];
+      y = t.clientY;
+      sx = t.clientX;
+      // Press and hold, then drag, to select text; it's copied when you let go.
+      pressTimer = window.setTimeout(() => {
+        pressTimer = null;
+        const c = cellAt(sx, y);
+        if (!c) return;
+        anchor = c;
+        selectTo(c);
+        navigator.vibrate?.(15);
+      }, 450);
+    }
     if (ta && document.activeElement !== ta) ta.inputMode = 'none';
   };
   const move = (ev: TouchEvent) => {
     if (ev.touches.length !== 1) return;
     const t = ev.touches[0];
+    if (anchor) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const c = cellAt(t.clientX, t.clientY);
+      if (c) selectTo(c);
+      return;
+    }
     const dy = y - t.clientY; // finger up → later lines
-    if (!dragging && Math.abs(dy) < 8) return;
+    if (!dragging && Math.abs(dy) < 8 && Math.abs(t.clientX - sx) < 8) return;
+    cancelPress();
     dragging = true;
     ev.preventDefault();
     ev.stopPropagation();
@@ -384,9 +447,19 @@ function touchScroll(e: Entry): () => void {
     return Math.abs(row - (b.baseY + b.cursorY - b.viewportY)) <= INPUT_ROWS;
   };
   const end = (ev: TouchEvent) => {
+    cancelPress();
+    if (anchor) {
+      anchor = null;
+      ev.preventDefault();
+      const sel = e.term.getSelection();
+      if (sel) void copyText(sel).then((ok) => ok && toast('Copied', 'ok'));
+      dragging = false;
+      return;
+    }
     // A drag isn't a tap: don't let it place the cursor or open the keyboard.
     if (dragging) ev.preventDefault();
     else if (ta && ev.touches.length === 0 && ev.changedTouches.length === 1) {
+      e.term.clearSelection();
       const want = inInput(ev.changedTouches[0].clientY);
       const focused = document.activeElement === ta;
       ta.inputMode = want ? 'text' : 'none';
@@ -399,7 +472,18 @@ function touchScroll(e: Entry): () => void {
   e.el.addEventListener('touchstart', start, { passive: true, capture: true });
   e.el.addEventListener('touchmove', move, { passive: false, capture: true });
   e.el.addEventListener('touchend', end, { passive: false, capture: true });
+  const cancel = () => {
+    cancelPress();
+    anchor = null;
+    dragging = false;
+  };
+  e.el.addEventListener('touchcancel', cancel, { capture: true });
+  // The long-press menu (Android) and callout (iOS) would fight the selection.
+  const noMenu = (ev: Event) => current.mobile && ev.preventDefault();
+  e.el.addEventListener('contextmenu', noMenu);
   return () => {
+    e.el.removeEventListener('touchcancel', cancel, { capture: true });
+    e.el.removeEventListener('contextmenu', noMenu);
     e.el.removeEventListener('touchstart', start, { capture: true });
     e.el.removeEventListener('touchmove', move, { capture: true });
     e.el.removeEventListener('touchend', end, { capture: true });
@@ -420,6 +504,7 @@ export function sendKey(tab: string, key: SoftKey): void {
 }
 
 export function focusTerminal(tab: string): void {
+  if (current.mobile) return; // a phone's keyboard opens only from a tap on the CLI's input
   cache.get(tab)?.term.focus();
 }
 

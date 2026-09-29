@@ -96,6 +96,8 @@ export interface ServiceAdapter {
   hookNote: string | null;
   /** Official ways to install the CLI on a VM (Settings → Services → Install). Shown verbatim. */
   install: InstallOption[];
+  /** Shell command that updates an installed CLI in place (Settings → Services → Update). */
+  update: string;
 }
 
 export interface InstallOption {

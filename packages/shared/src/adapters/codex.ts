@@ -57,6 +57,7 @@ export const codexAdapter: ServiceAdapter = {
   authArgs: ['login', 'status'],
   template: 'codex [-p <profile>] [-m <model>] [-c model_reasoning_effort="<effort>"] -a <approval> -s <sandbox> -C <dir> --add-dir <target>/briefs [-c notify=[…]]',
   testedVersions: ['0.154.', '0.15'],
+  update: 'npm install -g @openai/codex@latest',
   install: [{ label: 'npm (global)', cmd: 'npm install -g @openai/codex', note: "Needs Node; installs into npm's global prefix (may need sudo if that's /usr)." }],
   hookNote: 'notify reports each finished turn (precise "finished"). Approvals are detected on screen and answered with keystrokes.',
 };

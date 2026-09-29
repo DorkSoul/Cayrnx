@@ -66,6 +66,7 @@ export const opencodeAdapter: ServiceAdapter = {
   template: "OPENCODE_CONFIG_CONTENT='{\"model\":\"<provider/model>[#variant]\",\"default_agent\":\"<agent>\"}' opencode <dir> --standalone [--auto]",
   // OpenCode's permission prompt: Enter = allow once, a = always, Esc = reject.
   testedVersions: ['2.0.'],
+  update: 'opencode upgrade',
   install: [{ label: 'Official installer', cmd: 'curl -fsSL https://opencode.ai/install | bash', note: 'Installs into ~/.opencode/bin.' }],
   hookNote: null,
 };

@@ -52,6 +52,7 @@ export const CLAUDE_MODELS: ModelOption[] = [
   cm('sonnet[1m]', 'Sonnet 1M', 'Sonnet with the 1M-token context window', 'Aliases (follow the latest)', true),
   cm('opus[1m]', 'Opus 1M', 'Opus with the 1M-token context window', 'Aliases (follow the latest)', true),
   cm('claude-opus-5-5', 'Opus 5.5', 'Pinned version', 'Pinned versions'),
+  cm('claude-sonnet-5-5', 'Sonnet 5.5', 'Pinned version', 'Pinned versions'),
   cm('claude-sonnet-5', 'Sonnet 5', 'Pinned version', 'Pinned versions'),
   cm('claude-haiku-4-5', 'Haiku 4.5', 'Pinned version', 'Pinned versions', false, []),
 ];
@@ -94,6 +95,7 @@ export const claudeAdapter: ServiceAdapter = {
   template: 'claude [--session-id <uuid>] [--model <model>] [--effort <effort>] [--agent <agent>] --permission-mode <mode> --add-dir <target>/briefs [--settings <hooks json>]   (cwd = change dir)',
   // Claude's permission prompt lists numbered options: 1 Yes · 2 Yes, don't ask again · 3 No.
   testedVersions: ['2.1.'],
+  update: 'claude update',
   install: [
     { label: 'Official installer', cmd: 'curl -fsSL https://claude.ai/install.sh | bash', note: 'Native build into ~/.local/bin; keeps itself up to date.' },
     { label: 'npm (global)', cmd: 'npm install -g @anthropic-ai/claude-code', note: "Needs Node; installs into npm's global prefix (may need sudo if that's /usr)." },
